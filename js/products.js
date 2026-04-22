@@ -20,6 +20,7 @@ const PRODUCTS = {
       description: data.description || '',
       brandId:     data.brandId     || null,  // for drink capsule icons
       imageData:   data.imageData   || null,  // base64 for food photos
+      stock:       (data.stock === '' || data.stock === null || data.stock === undefined) ? '' : parseInt(data.stock, 10),
       available:   data.available   !== false,
       createdAt:   new Date().toISOString(),
     };
@@ -44,6 +45,16 @@ const PRODUCTS = {
     list[i].available = !list[i].available;
     this.save(bid, list);
     return list[i];
+  },
+
+  updateStock(bid, pid, variation) {
+    const list = this.getAll(bid);
+    const p = list.find(x => x.id === pid);
+    if (!p || p.stock === '') return; // Unlimited or not found
+    let newVal = p.stock + variation;
+    if (newVal < 0) newVal = 0;
+    p.stock = newVal;
+    this.save(bid, list);
   },
 
   del(bid, pid) {

@@ -28,8 +28,12 @@ const ORDERS = {
       status:      'pending',    // pending | preparing | paid
       createdAt:   new Date().toISOString(),
       paidAt:      null,
+      archived:    false,
     };
     list.unshift(o);
+    if (typeof PRODUCTS !== 'undefined') {
+      data.items.forEach(it => PRODUCTS.updateStock(bid, it.productId, -it.qty));
+    }
     this.save(bid, list);
     return o;
   },
@@ -49,12 +53,23 @@ const ORDERS = {
   },
 
   del(bid, oid) {
-    this.save(bid, this.getAll(bid).filter(o => o.id !== oid));
+    const list = this.getAll(bid);
+    const order = list.find(o => o.id === oid);
+    if (order && typeof PRODUCTS !== 'undefined') {
+      order.items.forEach(it => PRODUCTS.updateStock(bid, it.productId, it.qty));
+    }
+    this.save(bid, list.filter(o => o.id !== oid));
   },
 
   today(bid) {
     const tod = new Date().toDateString();
-    return this.getAll(bid).filter(o => new Date(o.createdAt).toDateString() === tod);
+    return this.getAll(bid).filter(o => new Date(o.createdAt).toDateString() === tod && !o.archived);
+  },
+
+  archivePaid(bid) {
+    const list = this.getAll(bid);
+    list.forEach(o => { if (o.status === 'paid') o.archived = true; });
+    this.save(bid, list);
   },
 
   stats(bid) {

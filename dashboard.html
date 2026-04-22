@@ -10,6 +10,9 @@
     .mobile-topbar { display:none; align-items:center; justify-content:space-between; padding:.9rem 1rem; background:var(--bg-surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:200; }
     @media(max-width:768px){ .mobile-topbar{display:flex;} }
     .main-body { flex:1; overflow-y:auto; padding:1.75rem; scroll-behavior: smooth; }
+    /* Sections */
+    .section { display: none; animation: fadeIn 0.4s var(--ease) forwards; }
+    .section.active { display: flex; flex-direction: column; flex: 1; height: 100%; min-height: 0; overflow: hidden; }
     /* Product modal */
     .type-tab { padding:.5rem 1.25rem; border-radius:var(--r-full); border:1px solid var(--border); background:var(--bg-glass); color:var(--text-secondary); font-size:.85rem; font-weight:500; cursor:pointer; transition:all .2s; }
     .type-tab.on { background:rgba(240,165,0,.12); border-color:var(--border-gold); color:var(--gold); }
@@ -26,6 +29,11 @@
     .gallery-filters { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
     .gf-btn { padding:.3rem .75rem; border-radius:var(--r-full); border:1px solid var(--border); background:var(--bg-glass); color:var(--text-secondary); font-size:.78rem; cursor:pointer; transition:all .15s; }
     .gf-btn.on { background:rgba(240,165,0,.1); border-color:var(--border-gold); color:var(--gold); }
+    /* Food Items */
+    .food-item { height:85px; border-radius:var(--r-md); background-size:cover; background-position:center; position:relative; cursor:pointer; transition:transform 0.2s; overflow:hidden; border:2px solid transparent; }
+    .food-item::after { content:''; position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 50%); }
+    .food-item.on { border-color:var(--gold); transform:scale(1.05); }
+    .food-label { position:absolute; bottom:5px; left:4px; right:4px; font-size:0.7rem; color:#fff; font-weight:700; z-index:2; text-shadow:0 1px 2px rgba(0,0,0,0.8); text-align:center; line-height:1.1; }
   </style>
 </head>
 <body>
@@ -57,6 +65,12 @@
       </div>
       <div class="nav-item" data-nav="settings" onclick="navTo('settings',this)">
         <span class="nav-icon">⚙️</span> Paramètres
+      </div>
+      <div class="nav-item" style="border-top:1px solid rgba(255,255,255,0.05); margin-top:.5rem; padding-top:1rem;" data-nav="register" onclick="navTo('register',this)">
+        <span class="nav-icon">📖</span> Registre
+      </div>
+      <div class="nav-item" onclick="viewClientMenu()" style="color:var(--gold); font-weight:600;">
+        <span class="nav-icon">👁️</span> Voir mon menu
       </div>
     </div>
     <div class="sidebar-ft">
@@ -115,6 +129,49 @@
           <div style="font-family:var(--font-d);font-weight:600;font-size:.95rem;margin-bottom:1rem;">🏆 Top Produits du Jour</div>
           <div id="topProducts"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ── REGISTRE ── -->
+    <div class="section" id="sec-register">
+      <div class="main-hdr"><span class="main-title">📖 Registre & Comptabilité</span></div>
+      <div class="main-body">
+        
+        <div class="card" style="margin-bottom:1.5rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+            <label class="form-label">Du</label>
+            <input type="date" id="regStart" class="form-input">
+          </div>
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:140px;">
+            <label class="form-label">Au</label>
+            <input type="date" id="regEnd" class="form-input">
+          </div>
+          <button class="btn btn-primary" onclick="renderRegister()">Filtrer</button>
+        </div>
+
+        <div class="stats-grid" style="grid-template-columns:1fr; margin-bottom:1.5rem;">
+          <div class="stat-card" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(232,93,4,.05)); border-color:var(--gold);">
+            <div class="stat-icon">💰</div>
+            <div class="stat-val" id="regTotalAmt" style="color:var(--gold);">0</div>
+            <div class="stat-lbl">Chiffre d'affaires sur la période</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:.85rem;">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.03); border-bottom:1px solid var(--border);">
+                <th style="padding:1rem; color:var(--text-secondary); font-weight:600;">Date & Heure</th>
+                <th style="padding:1rem; color:var(--text-secondary); font-weight:600;">N° Client</th>
+                <th style="padding:1rem; color:var(--text-secondary); font-weight:600;">Montant</th>
+                <th style="padding:1rem; color:var(--text-secondary); font-weight:600; text-align:right;">Billets</th>
+              </tr>
+            </thead>
+            <tbody id="regTbody">
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
 
@@ -252,13 +309,14 @@
       <div id="foodSection" style="display:none;">
         <div class="form-group" style="margin-bottom:.75rem;">
           <label class="form-label">Photo du plat</label>
-          <div class="upload-area" id="foodUploadArea" style="padding:1.25rem;" onclick="document.getElementById('foodPhotoFile').click()">
-            <input type="file" id="foodPhotoFile" accept="image/*" onchange="handleFoodPhoto(this)">
-            <div id="foodPhotoPreview">
+          <div style="display:flex; gap:.75rem; margin-bottom:.75rem;">
+             <button type="button" class="btn btn-secondary" style="flex:1; padding:.6rem;" onclick="openFoodGallery()">📸 Galerie Rapide</button>
+             <button type="button" class="btn btn-secondary" style="flex:1; padding:.6rem;" onclick="document.getElementById('foodPhotoFile').click()">📤 Importer image</button>
+             <input type="file" id="foodPhotoFile" accept="image/*" style="display:none;" onchange="handleFoodPhoto(this)">
+          </div>
+          <div id="foodPhotoPreview" style="text-align:center; border:1px dashed var(--border); background:var(--bg-glass); padding:1rem; border-radius:var(--r-md); cursor:pointer;" onclick="openFoodGallery()">
               <span style="font-size:1.8rem;">🍔</span>
-              <div style="font-size:.84rem;color:var(--text-secondary);margin:.4rem 0 .2rem;">Cliquez pour ajouter une photo</div>
-              <div style="font-size:.75rem;color:var(--text-muted);">PNG, JPG — Max 3 MB</div>
-            </div>
+              <div style="font-size:.84rem;color:var(--text-secondary);margin:.4rem 0 .2rem;">Aucune photo sélectionnée</div>
           </div>
         </div>
       </div>
@@ -291,6 +349,17 @@
           </div>
         </div>
         <div class="form-group">
+          <label class="form-label">Stock en réserve</label>
+          <input id="p-stock" class="form-input" type="number" min="0" placeholder="Vide = Illimité">
+        </div>
+      </div>
+
+      <div class="form-grid g2">
+        <div class="form-group">
+          <label class="form-label">Description courte</label>
+          <input id="p-desc" class="form-input" type="text" placeholder="Ex: Bière blonde fraîche...">
+        </div>
+        <div class="form-group">
           <label class="form-label">Disponibilité</label>
           <div class="toggle-wrap" style="height:48px;">
             <label class="toggle"><input type="checkbox" id="p-avail" checked><div class="toggle-sl"></div></label>
@@ -299,10 +368,7 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label">Description courte</label>
-        <input id="p-desc" class="form-input" type="text" placeholder="Ex: Bière blonde fraîche, bouteille 65cl">
-      </div>
+
     </div>
 
     <div class="form-error" id="prodErr" style="margin:.75rem 0;font-size:.87rem;"></div>
@@ -348,10 +414,32 @@
   </div>
 </div>
 
+<!-- ══ MODAL: Galerie de Nourriture ══ -->
+<div class="modal-overlay" id="foodGalleryModal">
+  <div class="modal modal-wide">
+    <div class="modal-hdr">
+      <span class="modal-title">🍔 Galerie de Plats</span>
+      <button class="modal-close" onclick="closeModal('foodGalleryModal')">✕</button>
+    </div>
+    <input class="gallery-search" id="foodGalSearch" placeholder="🔍 Rechercher un plat…" oninput="renderFoodGal()">
+    <div class="gallery-filters" id="foodGalFilters">
+      <button class="gf-btn on" data-cat="all" onclick="setFoodGalCat('all',this)">Toutes</button>
+      <button class="gf-btn" data-cat="fastfood" onclick="setFoodGalCat('fastfood',this)">🍔 Fast Food</button>
+      <button class="gf-btn" data-cat="plats" onclick="setFoodGalCat('plats',this)">🍗 Plats</button>
+      <button class="gf-btn" data-cat="desserts" onclick="setFoodGalCat('desserts',this)">🍰 Desserts</button>
+    </div>
+    <div class="gallery-grid" id="foodGalGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:.75rem; max-height:400px; padding-bottom:1rem; overflow-y:auto;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+      <button class="btn btn-primary" onclick="confirmFoodPhoto()">✓ Confirmer la sélection</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-box" id="toastBox"></div>
 
 <script src="js/auth.js"></script>
 <script src="js/drinks-gallery.js"></script>
+<script src="js/food-gallery.js"></script>
 <script src="js/products.js"></script>
 <script src="js/orders.js"></script>
 
@@ -370,13 +458,26 @@ let deletingId  = null;
 let prodType    = 'drink';
 let selectedBrandId = null;
 let galCat      = 'all';
+let foodGalCat  = 'all';
 let foodPhotoData = null;
 let sThemeColor = buvette.themeColor || '#f0a500';
+
+/* Écoute de la touche Entrée sur le modal produit */
+document.getElementById('prodModal').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('saveProdBtn').click();
+  }
+});
 
 /* ══ SIDEBAR MOBILE ══ */
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sbOverlay').classList.toggle('show');
+}
+
+function viewClientMenu() {
+  window.open(`menu.html?buvette=${BID}`, '_blank');
 }
 
 /* ══ NAVIGATION ══ */
@@ -388,6 +489,14 @@ function navTo(id, el) {
   if (id === 'orders')   renderOrders();
   if (id === 'stats')    renderStats();
   if (id === 'settings') loadSettings();
+  if (id === 'register') {
+    if (!document.getElementById('regStart').value) {
+      const d = new Date(); d.setDate(1);
+      document.getElementById('regStart').value = d.toISOString().split('T')[0];
+      document.getElementById('regEnd').value   = new Date().toISOString().split('T')[0];
+    }
+    renderRegister();
+  }
   if (window.innerWidth <= 768) toggleSidebar();
 }
 
@@ -424,7 +533,10 @@ function renderProducts() {
       <div class="prod-name">${p.name}</div>
       <div class="prod-price">${fmt(p.price)}</div>
       ${p.description?`<div class="prod-desc">${p.description}</div>`:''}
-      <div class="badge badge-cat">${PRODUCTS.CATS.find(c=>c.id===p.category)?.emoji||''} ${PRODUCTS.CATS.find(c=>c.id===p.category)?.label||p.category}</div>
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem; margin-top:.4rem;">
+        <div class="badge badge-cat">${PRODUCTS.CATS.find(c=>c.id===p.category)?.emoji||''} ${PRODUCTS.CATS.find(c=>c.id===p.category)?.label||p.category}</div>
+        ${p.stock !== '' && p.stock !== null && p.stock !== undefined ? `<div class="badge" style="background:${p.stock===0?'var(--error-bg)':p.stock<=5?'#fff3cd':'var(--bg-glass)'};color:${p.stock===0?'var(--error)':p.stock<=5?'#856404':'var(--text-secondary)'};border:1px solid ${p.stock===0?'var(--error)':'var(--border)'};">📦 ${p.stock===0?'Épuisé':p.stock}</div>` : ''}
+      </div>
       <div class="prod-actions">
         <label class="toggle" title="${p.available?'Désactiver':'Activer'}">
           <input type="checkbox" ${p.available?'checked':''} onchange="toggleAvail('${p.id}')">
@@ -463,6 +575,7 @@ function openAddModal() {
   document.getElementById('p-name').value = '';
   document.getElementById('p-cat').value = 'alcohol';
   document.getElementById('p-price').value = '';
+  document.getElementById('p-stock').value = '';
   document.getElementById('p-desc').value = '';
   document.getElementById('p-avail').checked = true;
   document.getElementById('p-currency-lbl').textContent = buvette.currency || 'FCFA';
@@ -483,6 +596,7 @@ function openEditModal(pid) {
   document.getElementById('p-name').value  = p.name;
   document.getElementById('p-cat').value   = p.category;
   document.getElementById('p-price').value = p.price;
+  document.getElementById('p-stock').value = p.stock || '';
   document.getElementById('p-desc').value  = p.description || '';
   document.getElementById('p-avail').checked = p.available;
   document.getElementById('p-currency-lbl').textContent = buvette.currency || 'FCFA';
@@ -514,32 +628,57 @@ function setType(type, silent=false) {
 }
 
 function saveProduct() {
-  const name  = document.getElementById('p-name').value.trim();
-  const price = parseFloat(document.getElementById('p-price').value);
-  const cat   = document.getElementById('p-cat').value;
-  const err   = document.getElementById('prodErr');
+  const err = document.getElementById('prodErr');
+  try {
+    const name  = document.getElementById('p-name').value.trim();
+    const price = parseFloat(document.getElementById('p-price').value);
+    const cat   = document.getElementById('p-cat').value;
 
-  if (!name)          { err.textContent='Le nom est requis.';   err.classList.add('show'); return; }
-  if (isNaN(price) || price < 0) { err.textContent='Prix invalide.'; err.classList.add('show'); return; }
-  if (prodType==='drink' && !selectedBrandId) { err.textContent="Choisissez une icône de capsule."; err.classList.add('show'); return; }
+    if (!name) {
+      err.textContent = 'Le nom est requis.';
+      err.classList.add('show');
+      return;
+    }
+    if (isNaN(price) || price < 0) {
+      err.textContent = 'Prix invalide.';
+      err.classList.add('show');
+      return;
+    }
+    if (prodType === 'drink' && !selectedBrandId) {
+      err.textContent = "Choisissez une icône de capsule.";
+      err.classList.add('show');
+      return;
+    }
 
-  err.classList.remove('show');
-  const data = {
-    name, price, category:cat, type:prodType,
-    description: document.getElementById('p-desc').value.trim(),
-    available:   document.getElementById('p-avail').checked,
-    brandId:     prodType==='drink'  ? selectedBrandId : null,
-    imageData:   prodType==='food'   ? foodPhotoData   : null,
-  };
+    err.classList.remove('show');
+    const data = {
+      name,
+      price,
+      category: cat,
+      type: prodType,
+      stock: document.getElementById('p-stock').value,
+      description: document.getElementById('p-desc').value.trim(),
+      available: document.getElementById('p-avail').checked,
+      brandId: prodType === 'drink' ? selectedBrandId : null,
+      imageData: prodType === 'food' ? foodPhotoData : null,
+    };
 
-  if (editingProd) PRODUCTS.update(BID, editingProd.id, data);
-  else             PRODUCTS.add(BID, data);
+    if (editingProd) {
+      PRODUCTS.update(BID, editingProd.id, data);
+    } else {
+      PRODUCTS.add(BID, data);
+    }
 
-  closeModal('prodModal');
-  buildCatTabs();
-  renderProducts();
-  toast(editingProd ? 'Produit modifié ✅' : 'Produit ajouté ✅', 'success');
-  editingProd = null;
+    closeModal('prodModal');
+    if (typeof buildCatTabs === 'function') buildCatTabs();
+    if (typeof renderProducts === 'function') renderProducts();
+    
+    toast(editingProd ? 'Produit modifié ✅' : 'Produit ajouté ✅', 'success');
+    editingProd = null;
+  } catch (e) {
+    err.textContent = "Erreur : " + e.message;
+    err.classList.add('show');
+  }
 }
 
 /* ══ GALLERY ══ */
@@ -589,7 +728,7 @@ function resetCapPreview() {
   document.getElementById('capBrandName').style.color = 'var(--text-secondary)';
 }
 function resetFoodPhoto() {
-  document.getElementById('foodPhotoPreview').innerHTML = `<span style="font-size:1.8rem;">🍔</span><div style="font-size:.84rem;color:var(--text-secondary);margin:.4rem 0 .2rem;">Cliquez pour ajouter une photo</div><div style="font-size:.75rem;color:var(--text-muted);">PNG, JPG — Max 3 MB</div>`;
+  document.getElementById('foodPhotoPreview').innerHTML = `<span style="font-size:1.8rem;">🍔</span><div style="font-size:.84rem;color:var(--text-secondary);margin:.4rem 0 .2rem;">Aucune photo sélectionnée</div>`;
 }
 function handleFoodPhoto(input) {
   const f = input.files[0]; if (!f) return;
@@ -603,9 +742,45 @@ function handleFoodPhoto(input) {
   r.readAsDataURL(f);
 }
 
+/* ══ FOOD GALLERY ══ */
+function openFoodGallery() {
+  foodGalCat = 'all';
+  document.querySelectorAll('#foodGalFilters .gf-btn').forEach(b => b.classList.toggle('on', b.dataset.cat==='all'));
+  document.getElementById('foodGalSearch').value = '';
+  renderFoodGal();
+  openModal('foodGalleryModal');
+}
+function setFoodGalCat(cat, btn) {
+  foodGalCat = cat;
+  document.querySelectorAll('#foodGalFilters .gf-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderFoodGal();
+}
+function renderFoodGal() {
+  FOODS.renderGallery(
+    document.getElementById('foodGalGrid'),
+    foodPhotoData, foodGalCat,
+    document.getElementById('foodGalSearch').value
+  );
+  document.getElementById('foodGalGrid').querySelectorAll('.food-item').forEach(el => {
+    el.onclick = () => {
+      document.querySelectorAll('#foodGalGrid .food-item').forEach(x => x.classList.remove('on'));
+      el.classList.add('on');
+    };
+  });
+}
+function confirmFoodPhoto() {
+  const selectedEl = document.querySelector('#foodGalGrid .food-item.on');
+  if (!selectedEl) { toast('Sélectionnez un plat','warning'); return; }
+  foodPhotoData = selectedEl.dataset.url;
+  document.getElementById('foodPhotoPreview').innerHTML =
+      `<img src="${foodPhotoData}" style="width:80px;height:80px;border-radius:var(--r-sm);object-fit:cover;display:block;margin:0 auto .4rem;"><span style="font-size:.75rem;color:var(--text-muted);">Cliquer pour changer</span>`;
+  closeModal('foodGalleryModal');
+}
+
 /* ══ ORDERS ══════════════════════════════════════════════════ */
 function renderOrders() {
-  const all     = ORDERS.getAll(BID);
+  const all     = ORDERS.getAll(BID).filter(o => !o.archived);
   const active  = all.filter(o => o.status !== 'paid');
   const paid    = all.filter(o => o.status === 'paid').slice(0, 30);
   document.getElementById('pendingCount').textContent = active.length;
@@ -669,10 +844,9 @@ function downloadTicket(oid) {
 }
 
 function clearPaidOrders() {
-  const all = ORDERS.getAll(BID).filter(o => o.status !== 'paid');
-  localStorage.setItem(`apeiron_orders_${BID}`, JSON.stringify(all));
+  ORDERS.archivePaid(BID);
   renderOrders();
-  toast('Commandes payées effacées','info');
+  toast('Commandes archivées vers le Registre 📖','info');
 }
 
 function updateBadge(n) {
@@ -878,6 +1052,55 @@ function pollOrders() {
       document.getElementById('orderBadge').classList.add('show');
     }
   }
+}
+
+/* ══ REGISTRE ══════════════════════════════════════════════════ */
+function renderRegister() {
+  const startStr = document.getElementById('regStart').value;
+  const endStr   = document.getElementById('regEnd').value;
+  let list = ORDERS.getAll(BID).filter(o => o.status === 'paid');
+
+  if (startStr && endStr) {
+    const sDate = new Date(startStr); sDate.setHours(0,0,0,0);
+    const eDate = new Date(endStr);   eDate.setHours(23,59,59,999);
+    list = list.filter(o => {
+      const d = new Date(o.createdAt);
+      return d >= sDate && d <= eDate;
+    });
+  }
+
+  const totalAmt = list.reduce((s,o) => s + o.total, 0);
+  document.getElementById('regTotalAmt').textContent = fmt(totalAmt);
+
+  const tbody = document.getElementById('regTbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:2rem; text-align:center; color:var(--text-muted);">Aucune donnée sur cette période</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(o => {
+    const d = new Date(o.createdAt);
+    const dateStr = d.toLocaleDateString('fr-FR');
+    const timeStr = d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+        <td style="padding:1rem;">
+          <div style="font-weight:500; font-family:var(--font-d);">${dateStr}</div>
+          <div style="font-size:.75rem; color:var(--text-muted);">${timeStr}</div>
+        </td>
+        <td style="padding:1rem;">
+          <div style="font-weight:500;">${o.orderNumber}</div>
+          <div style="font-size:.75rem; color:var(--text-muted);">👤 ${o.clientName}</div>
+        </td>
+        <td style="padding:1rem; font-family:var(--font-d); font-weight:700; color:var(--gold);">
+          ${fmt(o.total)}
+        </td>
+        <td style="padding:1rem; text-align:right;">
+          <button class="btn btn-ghost btn-sm" onclick="downloadTicket('${o.id}')" title="Télécharger">🎫</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 /* ══ START ══ */

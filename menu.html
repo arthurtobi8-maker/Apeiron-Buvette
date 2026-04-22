@@ -47,6 +47,16 @@
       content:''; flex:1; height:1px; background:var(--border); margin-left:.5rem;
     }
 
+    .client-grid, .mn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      padding: 0.5rem 0;
+    }
+    @media (min-width: 600px) {
+      .client-grid, .mn-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    }
+
     /* ── Client card ── */
     .mn-card {
       background:var(--bg-card); border:1px solid var(--border); border-radius:var(--r-lg);
@@ -112,6 +122,7 @@
       background:var(--bg-glass); color:var(--text-primary); display:flex;
       align-items:center; justify-content:center; cursor:pointer; font-size:.9rem;
       transition:all .15s; font-weight:700; flex-shrink:0;
+      user-select:none; -webkit-tap-highlight-color:transparent;
     }
     .qty-btn:hover { background:var(--bg-glass-h); border-color:var(--border-gold); }
     .qty-num { font-weight:700; font-size:.9rem; min-width:1.2rem; text-align:center; }
@@ -219,11 +230,18 @@
     <div class="divider"></div>
     <div class="form-grid" style="gap:.9rem;">
       <div class="form-group">
-        <label class="form-label">Votre prénom / surnom <span class="req">*</span></label>
-        <input id="clientName" class="form-input" type="text" placeholder="Ex: Jean, Table 3, …">
+        <label class="form-label">Mode de consommation <span class="req">*</span></label>
+        <div style="display:flex; gap:.5rem;">
+          <button class="btn btn-secondary" id="btnSurPlace" style="flex:1; border-color:var(--border-gold); background:rgba(240,165,0,.08);" onclick="setOrderMode('Sur Place')">🍽️ Sur place</button>
+          <button class="btn btn-ghost" id="btnEmporter" style="flex:1; border:1px solid var(--border);" onclick="setOrderMode('À emporter')">🛍️ À emporter</button>
+        </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Table / Référence (optionnel)</label>
+        <label class="form-label">Votre prénom / surnom <span class="req">*</span></label>
+        <input id="clientName" class="form-input" type="text" placeholder="Ex: Jean">
+      </div>
+      <div class="form-group" id="grpTable">
+        <label class="form-label">Table / Référence <span class="req">*</span></label>
         <input id="clientTable" class="form-input" type="text" placeholder="Ex: Table 5, Terrasse B">
       </div>
     </div>
@@ -234,19 +252,44 @@
 
 <div class="toast-box" id="toastBox"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/drinks-gallery.js"></script>
 <script src="js/products.js"></script>
 <script src="js/orders.js"></script>
+<script src="js/pdf.js"></script>
 
 <script>
 /* ══ INIT ════════════════════════════════════════════════════ */
 const params   = new URLSearchParams(location.search);
-const BID      = params.get('buvette');
+let BID        = params.get('buvette');
+
+// Auto-detect BID if missing but user is logged in
+if (!BID) {
+  const loggedUser = AUTH.getBuvette();
+  if (loggedUser) BID = loggedUser.id;
+}
+
 const buvette  = BID ? AUTH.getBuvetteById(BID) : null;
 
 // Restore pending order from sessionStorage
 let activeOrderId = sessionStorage.getItem(`apeiron_order_${BID}`) || null;
+let orderMode = 'Sur Place';
+
+function setOrderMode(mode) {
+  orderMode = mode;
+  const isSurPlace = (mode === 'Sur Place');
+  document.getElementById('btnSurPlace').className = isSurPlace ? 'btn btn-secondary' : 'btn btn-ghost';
+  document.getElementById('btnSurPlace').style.borderColor = isSurPlace ? 'var(--border-gold)' : 'var(--border)';
+  document.getElementById('btnSurPlace').style.background = isSurPlace ? 'rgba(240,165,0,.08)' : 'transparent';
+
+  document.getElementById('btnEmporter').className = !isSurPlace ? 'btn btn-secondary' : 'btn btn-ghost';
+  document.getElementById('btnEmporter').style.borderColor = !isSurPlace ? 'var(--border-gold)' : 'var(--border)';
+  document.getElementById('btnEmporter').style.background = !isSurPlace ? 'rgba(240,165,0,.08)' : 'transparent';
+
+  document.getElementById('grpTable').style.display = isSurPlace ? 'flex' : 'none';
+}
 
 if (!buvette) {
   document.getElementById('loader').style.display = 'none';
@@ -254,6 +297,14 @@ if (!buvette) {
 } else {
   init();
 }
+
+/* Écoute de la touche Entrée sur le modal panier */
+document.getElementById('cartModal').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('sendOrderBtn').click();
+  }
+});
 
 function init() {
   /* Apply theme color */
@@ -305,55 +356,47 @@ function cartCount() { return Object.values(cart).reduce((s,v)=>s+v,0); }
 const CUR = buvette.currency || 'FCFA';
 
 function buildMenu() {
-  const prodsByCategory = {};
-  PRODUCTS.CATS.filter(c=>c.id!=='all').forEach(c => {
-    const prods = allProds.filter(p=>p.category===c.id);
-    if (prods.length) prodsByCategory[c.id] = { meta:c, prods };
-  });
+  const container = document.getElementById('menuProducts');
+  const allAvailable = PRODUCTS.getAll(BID); // Get EVERYTHING, no filters
+  
+  console.log("FORCE DEBUG: Products found in storage:", allAvailable);
 
-  if (!Object.keys(prodsByCategory).length) {
-    document.getElementById('menuProducts').innerHTML = `
+  if (!allAvailable.length) {
+    container.innerHTML = `
       <div class="mn-empty">
-        <div style="font-size:3rem;margin-bottom:1rem;">🍽️</div>
-        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">Menu en préparation</div>
-        <div style="color:var(--text-secondary);font-size:.88rem;">Revenez bientôt !</div>
+        <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
+        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">Aucun produit trouvé</div>
+        <div style="color:var(--text-secondary);font-size:.88rem;">Assurez-vous d'avoir ajouté des produits dans le Dashboard pour l'ID : ${BID}</div>
       </div>`;
-    document.getElementById('mnCatTabs').innerHTML = '';
     return;
   }
 
-  /* Tab bar */
-  const tabs = document.getElementById('mnCatTabs');
-  tabs.innerHTML = Object.keys(prodsByCategory).map((cid,i) => {
-    const meta = prodsByCategory[cid].meta;
-    return `<div class="cat-tab ${i===0?'active':''}" data-cat="${cid}" onclick="scrollToSection('${cid}',this)">${meta.emoji} ${meta.label}</div>`;
-  }).join('');
-
-  /* Sections */
-  const container = document.getElementById('menuProducts');
-  container.innerHTML = Object.entries(prodsByCategory).map(([cid,{meta,prods}]) =>
-    `<div class="cat-section" id="cat-${cid}">
-      <div class="cat-section-title">${meta.emoji} ${meta.label}</div>
-      <div class="client-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));">
-        ${prods.map(prodCard).join('')}
+  container.innerHTML = `
+    <section class="cat-section">
+      <h3 class="cat-section-title">🍽️ Notre Carte</h3>
+      <div class="mn-grid">
+        ${allAvailable.map(p => prodCard(p)).join('')}
       </div>
-    </div>`
-  ).join('');
+    </section>
+  `;
 }
 
 function prodCard(p) {
+  const outOfStock = p.stock === 0;
+  const isAvail = p.available && !outOfStock;
   const icon = (p.type==='drink' && p.brandId)
     ? `<div class="mn-cap">${DRINKS.svg(DRINKS.byId(p.brandId)||{id:'',lines:['?'],p:'#555',s:'#333',rim:'#888',t:'#fff'}, 62)}</div>`
     : p.imageData
       ? `<img class="mn-photo" src="${p.imageData}" alt="${p.name}">`
       : `<div style="width:62px;height:62px;border-radius:var(--r-sm);background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:2rem;">${p.category==='food'?'🍔':p.category==='dessert'?'🍰':'📦'}</div>`;
   return `
-  <div class="mn-card ${p.available?'':'unavail'}" id="mc-${p.id}" onclick="addToCart('${p.id}')">
+  <div class="mn-card ${isAvail?'':'unavail'}" id="mc-${p.id}" ${isAvail?`onclick="addToCart('${p.id}')"`:''}>
     <div class="mn-qty" id="qty-${p.id}"></div>
     ${icon}
     <div class="mn-pname">${p.name}</div>
     <div class="mn-pprice">${fmtPrice(p.price)}</div>
     ${p.description?`<div class="mn-pdesc">${p.description}</div>`:''}
+    ${outOfStock ? `<div class="mn-pdesc" style="color:var(--error);font-weight:bold;margin-top:.3rem;">❌ Épuisé</div>` : ''}
   </div>`;
 }
 
@@ -383,6 +426,11 @@ setTimeout(()=>{
 
 /* ══ CART ════════════════════════════════════════════════════ */
 function addToCart(pid) {
+  const p = allProds.find(x=>x.id===pid);
+  if (p && p.stock !== '' && p.stock !== null && p.stock !== undefined && (cart[pid]||0) >= p.stock) {
+    toast(`Désolé, il ne reste que ${p.stock} unité(s) au frais !`, 'warning');
+    return;
+  }
   cart[pid] = (cart[pid]||0) + 1;
   updateCartUI();
   const card = document.getElementById(`mc-${pid}`);
@@ -456,6 +504,14 @@ function openCart() {
 }
 
 function changeQty(pid, delta) {
+  if (delta > 0) {
+    const p = allProds.find(x=>x.id===pid);
+    if (p && p.stock !== '' && p.stock !== null && p.stock !== undefined && (cart[pid]||0) >= p.stock) {
+      toast(`Désolé, stock limite atteint (${p.stock})`, 'warning');
+      return;
+    }
+  }
+
   cart[pid] = Math.max(0, (cart[pid]||0)+delta);
   if (cart[pid]===0) delete cart[pid];
 
@@ -481,6 +537,15 @@ function sendOrder() {
     document.getElementById('orderErr').classList.add('show');
     return;
   }
+  let tInfo = '';
+  if (orderMode === 'Sur Place') {
+    const tab = document.getElementById('clientTable').value.trim();
+    if (!tab) { document.getElementById('orderErr').textContent='Le numéro de table est requis pour du Sur Place.'; document.getElementById('orderErr').classList.add('show'); return; }
+    tInfo = `Sur Place (Table: ${tab})`;
+  } else {
+    tInfo = `À emporter`;
+  }
+
   const items = Object.entries(cart)
     .filter(([,qty])=>qty>0)
     .map(([pid,qty])=>{
@@ -493,7 +558,7 @@ function sendOrder() {
 
   const order = ORDERS.create(BID, {
     clientName: name,
-    tableInfo:  document.getElementById('clientTable').value.trim(),
+    tableInfo:  tInfo,
     items,
   });
 
@@ -558,12 +623,11 @@ function renderStatus(order) {
 function downloadTicket(oid) {
   const order = ORDERS.getById(BID, oid);
   if (!order) return;
-  // Load jsPDF then generate
-  if (window.jspdf) { PDF.generate(buvette, order); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-  s.onload = () => PDF.generate(buvette, order);
-  document.head.appendChild(s);
+  if (typeof PDF !== 'undefined') {
+    PDF.generate(buvette, order);
+  } else {
+    toast("Erreur de chargement du module PDF", "error");
+  }
 }
 
 function backToMenu() {
@@ -586,13 +650,6 @@ function toast(msg,type='info') {
   requestAnimationFrame(()=>t.classList.add('show'));
   setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3500);
 }
-
-/* Lazy-load jsPDF */
-window.addEventListener('load',()=>{
-  const s=document.createElement('script');
-  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-  document.head.appendChild(s);
-});
 </script>
 </body>
 </html>
