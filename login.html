@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apeiron Buvette — Connexion</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🍺</text></svg>">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+    .login-box {
+      width:100%; max-width:420px;
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--r-xl); padding:2.5rem 2rem;
+      animation:slideUp .4s var(--ease) forwards;
+    }
+    .login-logo { text-align:center; margin-bottom:2rem; }
+    .login-icon { font-size:2.5rem; display:block; margin-bottom:.5rem; }
+    .login-brand { font-family:var(--font-d); font-size:1.4rem; font-weight:800; color:var(--gold); }
+    .login-sub   { font-size:.85rem; color:var(--text-muted); margin-top:.25rem; }
+  </style>
+</head>
+<body class="gradient-bg">
+
+<div class="login-box">
+  <div class="login-logo">
+    <span class="login-icon">🍺</span>
+    <div class="login-brand">Apeiron Buvette</div>
+    <div class="login-sub">Connectez-vous à votre espace</div>
+  </div>
+
+  <form id="loginForm" novalidate style="display:flex;flex-direction:column;gap:1.1rem;">
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input id="l-email" class="form-input" type="email" placeholder="votre@email.com" autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <div style="position:relative;">
+        <input id="l-pw" class="form-input" type="password" placeholder="••••••••" style="padding-right:2.8rem;">
+        <button type="button" id="eyeBtn" onclick="toggleEye()" style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:.2rem;">👁</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.83rem;color:var(--text-secondary);">
+        <div class="toggle" style="width:40px;height:22px;">
+          <input type="checkbox" id="l-remember">
+          <div class="toggle-sl" style="font-size:.6rem;"></div>
+        </div>
+        Se souvenir de moi (30 jours)
+      </label>
+    </div>
+
+    <div class="form-error" id="loginErr" style="font-size:.87rem;"></div>
+
+    <button type="submit" class="btn btn-primary btn-lg" id="loginBtn" style="width:100%;margin-top:.4rem;">
+      Se connecter
+    </button>
+  </form>
+
+  <div class="divider"></div>
+  <div style="text-align:center;">
+    <p style="font-size:.83rem;color:var(--text-muted);margin-bottom:.5rem;">Pas encore de compte ?</p>
+    <a href="index.html" class="btn btn-secondary btn-sm">Créer ma buvette →</a>
+  </div>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+<script src="js/auth.js"></script>
+<script>
+  AUTH.requireGuest();
+  let pwVisible = false;
+  function toggleEye() {
+    pwVisible = !pwVisible;
+    document.getElementById('l-pw').type = pwVisible ? 'text' : 'password';
+    document.getElementById('eyeBtn').textContent = pwVisible ? '🙈' : '👁';
+  }
+  document.getElementById('loginForm').onsubmit = e => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const err = document.getElementById('loginErr');
+    const em  = document.getElementById('l-email').value.trim();
+    const pw  = document.getElementById('l-pw').value;
+    if (!em || !pw) { err.textContent='Veuillez remplir tous les champs.'; err.classList.add('show'); return; }
+    btn.disabled = true; btn.textContent = 'Connexion…';
+    try {
+      AUTH.login(em, pw);
+      if (document.getElementById('l-remember').checked)
+        AUTH.setSession(AUTH.getCurrentBuvette().id, true);
+      window.location.href = 'dashboard.html';
+    } catch(ex) {
+      err.textContent = ex.message; err.classList.add('show');
+      btn.disabled = false; btn.textContent = 'Se connecter';
+    }
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apeiron Buvette — Inscription</title>
+  <meta name="description" content="Créez votre compte Apeiron Buvette et gérez votre établissement avec élégance.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🍺</text></svg>">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    .day-btn { padding:.4rem .85rem; border-radius:var(--r-full); border:1px solid var(--border); background:var(--bg-glass); color:var(--text-secondary); font-size:.82rem; font-weight:500; cursor:pointer; transition:all var(--t-fast) var(--ease); }
+    .day-btn.on { background:linear-gradient(135deg,var(--gold),var(--orange)); color:#fff; border-color:transparent; }
+    .feat-item { display:flex; gap:.75rem; align-items:center; padding:1rem; }
+    .feat-icon { font-size:1.7rem; flex-shrink:0; }
+    .feat-title { font-weight:600; font-size:.88rem; margin-bottom:.15rem; }
+    .feat-desc  { font-size:.78rem; color:var(--text-muted); }
+    .pw-strength { height:4px; border-radius:2px; margin-top:.4rem; background:var(--border); overflow:hidden; }
+    .pw-strength-bar { height:100%; border-radius:2px; transition:all .4s var(--ease); width:0%; }
+  </style>
+</head>
+<body class="gradient-bg">
+
+<div class="reg-page">
+
+  <!-- ── Left Hero ── -->
+  <aside class="reg-hero">
+    <div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:2.5rem;">
+        <span style="font-size:1.8rem;">🍺</span>
+        <span style="font-family:var(--font-d);font-size:1.2rem;font-weight:800;color:var(--gold);letter-spacing:.05em;">Apeiron Buvette</span>
+      </div>
+
+      <h1 style="font-family:var(--font-d);font-size:2rem;font-weight:800;line-height:1.15;margin-bottom:1rem;">
+        Gérez votre bar<br>
+        <span class="gradient-text">avec élégance.</span>
+      </h1>
+      <p style="color:var(--text-secondary);line-height:1.75;margin-bottom:2rem;font-size:.9rem;">
+        La plateforme tout-en-un pour les buvettes modernes. Menu numérique partageable, commandes en temps réel, et tickets PDF automatiques.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+        <div class="glass-gold feat-item">
+          <span class="feat-icon">📱</span>
+          <div><div class="feat-title">Menu numérique</div><div class="feat-desc">Partagez votre carte via un simple lien</div></div>
+        </div>
+        <div class="glass-gold feat-item">
+          <span class="feat-icon">🎫</span>
+          <div><div class="feat-title">Tickets PDF</div><div class="feat-desc">Générés automatiquement après paiement</div></div>
+        </div>
+        <div class="glass-gold feat-item">
+          <span class="feat-icon">📊</span>
+          <div><div class="feat-title">Statistiques</div><div class="feat-desc">Suivez vos ventes en temps réel</div></div>
+        </div>
+        <div class="glass-gold feat-item">
+          <span class="feat-icon">🍺</span>
+          <div><div class="feat-title">Galerie de capsules</div><div class="feat-desc">Icônes de marques prêtes à l'emploi</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;">
+      <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:.5rem;">Déjà un compte ?</p>
+      <a href="login.html" class="btn btn-ghost btn-sm">Se connecter →</a>
+    </div>
+  </aside>
+
+  <!-- ── Right Form ── -->
+  <main class="reg-main">
+    <div class="reg-inner">
+
+      <h2 style="font-family:var(--font-d);font-size:1.6rem;font-weight:800;margin-bottom:.4rem;">Créer votre buvette</h2>
+      <p style="color:var(--text-secondary);margin-bottom:2rem;font-size:.88rem;">Quelques informations pour configurer votre espace.</p>
+
+      <!-- Steps -->
+      <div class="steps" id="stepsNav">
+        <div class="step-wrap">
+          <div class="step-row">
+            <div class="step-circle active" id="sc1">1</div>
+            <div class="step-line" id="sl1"></div>
+          </div>
+          <span class="step-label active" id="slbl1">Votre Buvette</span>
+        </div>
+        <div class="step-wrap">
+          <div class="step-row">
+            <div class="step-circle" id="sc2">2</div>
+            <div class="step-line" id="sl2"></div>
+          </div>
+          <span class="step-label" id="slbl2">Votre Compte</span>
+        </div>
+        <div class="step-wrap" style="flex:0;">
+          <div class="step-row"><div class="step-circle" id="sc3">3</div></div>
+          <span class="step-label" id="slbl3">Motivation</span>
+        </div>
+      </div>
+
+      <form id="regForm" novalidate>
+
+        <!-- ── STEP 1: Buvette ── -->
+        <div class="step-panel active" id="panel1">
+          <div class="form-grid" style="gap:1.2rem;">
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Nom de la buvette <span class="req">*</span></label>
+                <input id="f-name" class="form-input" type="text" placeholder="Ex: Bar Le Terminus" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type d'établissement <span class="req">*</span></label>
+                <select id="f-type" class="form-select">
+                  <option value="">Sélectionner…</option>
+                  <option value="bar">Bar / Buvette</option>
+                  <option value="restaurant">Restaurant</option>
+                  <option value="snack">Snack / Fast-food</option>
+                  <option value="mixte">Bar-Restaurant Mixte</option>
+                  <option value="kiosque">Kiosque</option>
+                  <option value="boite">Boîte de Nuit</option>
+                  <option value="maquis">Maquis</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Slogan / Description courte</label>
+              <input id="f-slogan" class="form-input" type="text" placeholder='"Fraîcheur et convivialité garanties"' maxlength="80">
+            </div>
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Ville</label>
+                <input id="f-city" class="form-input" type="text" placeholder="Ex: Douala">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Quartier / Adresse</label>
+                <input id="f-address" class="form-input" type="text" placeholder="Ex: Akwa, Rue 1234">
+              </div>
+            </div>
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Téléphone buvette</label>
+                <input id="f-phone" class="form-input" type="tel" placeholder="+237 6XX XXX XXX">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Devise <span class="req">*</span></label>
+                <select id="f-currency" class="form-select">
+                  <option value="FCFA">FCFA — Franc CFA</option>
+                  <option value="EUR">EUR — Euro €</option>
+                  <option value="USD">USD — Dollar $</option>
+                  <option value="GBP">GBP — Livre Sterling £</option>
+                  <option value="MAD">MAD — Dirham marocain</option>
+                  <option value="DZD">DZD — Dinar algérien</option>
+                  <option value="TND">TND — Dinar tunisien</option>
+                  <option value="XOF">XOF — Franc CFA BCEAO</option>
+                  <option value="NGN">NGN — Naira nigérian</option>
+                  <option value="GHS">GHS — Cedi ghanéen</option>
+                  <option value="KES">KES — Shilling kenyan</option>
+                  <option value="CAD">CAD — Dollar canadien</option>
+                  <option value="CHF">CHF — Franc suisse</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Heure d'ouverture</label>
+                <input id="f-open" class="form-input" type="time" value="08:00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Heure de fermeture</label>
+                <input id="f-close" class="form-input" type="time" value="23:00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Jours d'ouverture</label>
+              <div id="daysRow" style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.3rem;"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Couleur thème (interface client)</label>
+              <div id="colorRow" class="color-picker"></div>
+              <div class="form-hint mt-1">Visible par vos clients sur le menu public.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Logo / Photo de la buvette</label>
+              <div class="upload-area" id="logoArea" onclick="document.getElementById('logoFile').click()">
+                <input type="file" id="logoFile" accept="image/*">
+                <div id="logoPrev">
+                  <div style="font-size:2.2rem;margin-bottom:.5rem;">📷</div>
+                  <div style="font-size:.88rem;color:var(--text-secondary);margin-bottom:.2rem;">Cliquer pour ajouter votre logo</div>
+                  <div style="font-size:.76rem;color:var(--text-muted);">PNG, JPG — Max 2 MB</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:2rem;">
+            <button type="button" class="btn btn-primary btn-lg" onclick="goStep(2)">Suivant →</button>
+          </div>
+        </div>
+
+        <!-- ── STEP 2: Account ── -->
+        <div class="step-panel" id="panel2">
+          <div class="form-grid" style="gap:1.2rem;">
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Prénom <span class="req">*</span></label>
+                <input id="f-fname" class="form-input" type="text" placeholder="Votre prénom">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nom <span class="req">*</span></label>
+                <input id="f-lname" class="form-input" type="text" placeholder="Votre nom">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email <span class="req">*</span></label>
+              <input id="f-email" class="form-input" type="email" placeholder="votre@email.com">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Téléphone personnel</label>
+              <input id="f-ophone" class="form-input" type="tel" placeholder="+237 6XX XXX XXX">
+            </div>
+
+            <div class="form-grid g2">
+              <div class="form-group">
+                <label class="form-label">Mot de passe <span class="req">*</span></label>
+                <input id="f-pw" class="form-input" type="password" placeholder="Min. 8 caractères" oninput="checkPw()">
+                <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Confirmer <span class="req">*</span></label>
+                <input id="f-pw2" class="form-input" type="password" placeholder="Répétez">
+              </div>
+            </div>
+            <div class="form-error" id="pwErr">Les mots de passe ne correspondent pas.</div>
+
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:2rem;">
+            <button type="button" class="btn btn-secondary" onclick="goStep(1)">← Retour</button>
+            <button type="button" class="btn btn-primary btn-lg" onclick="goStep(3)">Suivant →</button>
+          </div>
+        </div>
+
+        <!-- ── STEP 3: Motivation ── -->
+        <div class="step-panel" id="panel3">
+          <div class="form-grid" style="gap:1.2rem;">
+
+            <div class="form-group">
+              <label class="form-label">Pourquoi choisissez-vous Apeiron Buvette ? <span class="req">*</span></label>
+              <textarea id="f-motiv" class="form-textarea" rows="4" placeholder="Parlez-nous de votre projet et de vos besoins…"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Vos ambitions pour votre établissement</label>
+              <textarea id="f-ambitions" class="form-textarea" rows="3" placeholder="Où voulez-vous amener votre buvette dans les prochains mois ?"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Comment avez-vous connu Apeiron ?</label>
+              <select id="f-found" class="form-select">
+                <option value="">Sélectionner…</option>
+                <option value="ami">Un ami / collègue</option>
+                <option value="reseaux">Réseaux sociaux</option>
+                <option value="recherche">Moteur de recherche</option>
+                <option value="pub">Publicité</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+
+            <!-- CGU -->
+            <div id="cguWrap" style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;" onclick="toggleCgu()">
+              <div id="cguBox" style="width:20px;height:20px;border-radius:5px;border:2px solid var(--border);background:var(--bg-glass);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .2s;"></div>
+              <span style="font-size:.84rem;color:var(--text-secondary);">
+                J'accepte les <a href="#" onclick="return false;" style="color:var(--gold);">conditions générales d'utilisation</a> d'Apeiron Buvette.
+              </span>
+            </div>
+            <div class="form-error" id="cguErr">Vous devez accepter les CGU pour continuer.</div>
+
+          </div>
+
+          <div class="form-error" id="regErr" style="margin-top:1rem;font-size:.88rem;"></div>
+
+          <div style="display:flex;justify-content:space-between;margin-top:2rem;">
+            <button type="button" class="btn btn-secondary" onclick="goStep(2)">← Retour</button>
+            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">🚀 Créer ma buvette</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </main>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+
+<script src="js/auth.js"></script>
+<script>
+  AUTH.requireGuest();
+
+  /* ── State ── */
+  let step = 1, logoData = null, themeColor = '#f0a500', cguChecked = false;
+  const openDays = new Set(['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']);
+
+  /* ── Days ── */
+  const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const daysRow = document.getElementById('daysRow');
+  dayNames.forEach(d => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = d; btn.className = 'day-btn on';
+    btn.dataset.day = d;
+    btn.onclick = () => {
+      if (openDays.has(d)) { openDays.delete(d); btn.classList.remove('on'); }
+      else { openDays.add(d); btn.classList.add('on'); }
+    };
+    daysRow.appendChild(btn);
+  });
+
+  /* ── Colors ── */
+  const palette = ['#f0a500','#e85d04','#ef4444','#ec4899','#a855f7','#3b82f6','#06b6d4','#10b981','#22c55e','#ffffff'];
+  const colorRow = document.getElementById('colorRow');
+  palette.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'c-swatch' + (c===themeColor?' on':'');
+    sw.style.background = c;
+    sw.title = c;
+    sw.onclick = () => { themeColor = c; colorRow.querySelectorAll('.c-swatch').forEach(x=>x.classList.remove('on')); sw.classList.add('on'); };
+    colorRow.appendChild(sw);
+  });
+  const customSw = document.createElement('label');
+  customSw.style.cssText = 'cursor:pointer;position:relative;';
+  customSw.innerHTML = `<div class="c-swatch" style="background:conic-gradient(red,yellow,green,blue,red);" title="Personnalisé"></div><input type="color" id="customColor" style="position:absolute;opacity:0;width:0;height:0;">`;
+  customSw.querySelector('input').oninput = e => {
+    themeColor = e.target.value;
+    colorRow.querySelectorAll('.c-swatch').forEach(x=>x.classList.remove('on'));
+  };
+  colorRow.appendChild(customSw);
+
+  /* ── Logo upload ── */
+  document.getElementById('logoFile').onchange = function() {
+    const f = this.files[0];
+    if (!f) return;
+    if (f.size > 2*1024*1024) { toast('Fichier trop volumineux (max 2 MB)', 'error'); return; }
+    const r = new FileReader();
+    r.onload = e => {
+      logoData = e.target.result;
+      document.getElementById('logoPrev').innerHTML = `<img src="${logoData}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;margin:0 auto .5rem;"><span style="font-size:.76rem;color:var(--text-muted);">Cliquer pour changer</span>`;
+    };
+    r.readAsDataURL(f);
+  };
+
+  /* ── Password strength ── */
+  function checkPw() {
+    const v = document.getElementById('f-pw').value;
+    const score = [v.length>=8, /[A-Z]/.test(v), /[0-9]/.test(v), /[^A-Za-z0-9]/.test(v)].filter(Boolean).length;
+    const colors = ['','#ef4444','#f59e0b','#3b82f6','#22c55e'];
+    const widths = ['0%','25%','50%','75%','100%'];
+    const bar = document.getElementById('pwBar');
+    bar.style.width = widths[score]; bar.style.background = colors[score]||'transparent';
+  }
+
+  /* ── CGU ── */
+  function toggleCgu() {
+    cguChecked = !cguChecked;
+    const box = document.getElementById('cguBox');
+    if (cguChecked) {
+      box.style.background = 'linear-gradient(135deg,var(--gold),var(--orange))';
+      box.style.border = 'none';
+      box.innerHTML = '<svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1,4.5 3.5,7 10,1" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    } else {
+      box.style.background = 'var(--bg-glass)'; box.style.border = '2px solid var(--border)'; box.innerHTML = '';
+    }
+    document.getElementById('cguErr').classList.remove('show');
+  }
+
+  /* ── Step navigation ── */
+  function goStep(to) {
+    if (to > step && !validate(step)) return;
+    document.getElementById(`panel${step}`).classList.remove('active');
+    document.getElementById(`panel${to}`).classList.add('active');
+    [1,2,3].forEach(i => {
+      const c = document.getElementById(`sc${i}`);
+      const l = document.getElementById(`sl${i}`);
+      const lbl = document.getElementById(`slbl${i}`);
+      c.classList.remove('active','done');
+      if (i < to) { c.classList.add('done'); c.textContent = '✓'; }
+      else if (i === to) { c.classList.add('active'); c.textContent = i; }
+      else c.textContent = i;
+      if (l) l.classList.toggle('done', i < to);
+      if (lbl) lbl.classList.toggle('active', i === to);
+    });
+    step = to;
+    window.scrollTo(0,0);
+  }
+
+  function validate(s) {
+    if (s === 1) {
+      if (!document.getElementById('f-name').value.trim()) { toast('Le nom de la buvette est requis','error'); return false; }
+      if (!document.getElementById('f-type').value) { toast("Choisissez un type d'établissement",'error'); return false; }
+    }
+    if (s === 2) {
+      if (!document.getElementById('f-fname').value.trim() || !document.getElementById('f-lname').value.trim()) { toast('Prénom et nom requis','error'); return false; }
+      const em = document.getElementById('f-email').value.trim();
+      if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { toast('Email invalide','error'); return false; }
+      const pw = document.getElementById('f-pw').value;
+      if (pw.length < 8) { toast('Mot de passe trop court (min. 8 car.)','error'); return false; }
+      if (pw !== document.getElementById('f-pw2').value) {
+        document.getElementById('pwErr').classList.add('show'); return false;
+      }
+      document.getElementById('pwErr').classList.remove('show');
+    }
+    return true;
+  }
+
+  /* ── Submit ── */
+  document.getElementById('regForm').onsubmit = async e => {
+    e.preventDefault();
+    if (!validate(3)) return;
+    if (!document.getElementById('f-motiv').value.trim()) { toast("Dites-nous pourquoi vous choisissez Apeiron",'error'); return; }
+    if (!cguChecked) { document.getElementById('cguErr').classList.add('show'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Création en cours…';
+
+    try {
+      AUTH.register({
+        name:       document.getElementById('f-name').value.trim(),
+        type:       document.getElementById('f-type').value,
+        slogan:     document.getElementById('f-slogan').value.trim(),
+        city:       document.getElementById('f-city').value.trim(),
+        address:    document.getElementById('f-address').value.trim(),
+        phone:      document.getElementById('f-phone').value.trim(),
+        currency:   document.getElementById('f-currency').value,
+        openTime:   document.getElementById('f-open').value,
+        closeTime:  document.getElementById('f-close').value,
+        openDays:   [...openDays],
+        logo:       logoData,
+        themeColor,
+        ownerName:  `${document.getElementById('f-fname').value.trim()} ${document.getElementById('f-lname').value.trim()}`,
+        email:      document.getElementById('f-email').value.trim(),
+        ownerPhone: document.getElementById('f-ophone').value.trim(),
+        password:   document.getElementById('f-pw').value,
+        motivation: document.getElementById('f-motiv').value.trim(),
+        ambitions:  document.getElementById('f-ambitions').value.trim(),
+        howFound:   document.getElementById('f-found').value,
+      });
+      toast('Buvette créée ! Bienvenue 🎉','success');
+      setTimeout(() => window.location.href = 'dashboard.html', 1400);
+    } catch(err) {
+      const el = document.getElementById('regErr');
+      el.textContent = err.message; el.classList.add('show');
+      btn.disabled = false; btn.textContent = '🚀 Créer ma buvette';
+    }
+  };
+
+  /* ── Toast ── */
+  function toast(msg, type='info') {
+    const icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.innerHTML = `<span>${icons[type]}</span><span class="toast-msg">${msg}</span>`;
+    document.getElementById('toastBox').appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),400); }, 3500);
+  }
+</script>
+</body>
+</html>
