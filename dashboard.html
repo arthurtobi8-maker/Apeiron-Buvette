@@ -565,7 +565,7 @@ function renderProducts() {
     const icon = p.type === 'drink' && p.brandId
       ? `<div class="prod-icon">${DRINKS.svg(DRINKS.byId(p.brandId)||{id:'',lines:['?'],p:'#555',s:'#333',rim:'#888',t:'#fff'}, 70)}</div>`
       : p.imageData
-        ? `<img class="prod-photo" src="${p.imageData}" alt="${p.name}">`
+        ? `<img class="prod-photo" src="${p.imageData}" alt="${p.name}" loading="lazy">`
         : `<div style="width:70px;height:70px;border-radius:var(--r-sm);background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-size:2rem;">${p.category==='food'?'🍔':p.category==='dessert'?'🍰':'📦'}</div>`;
     return `
     <div class="prod-card ${p.available?'':'off'}" id="pc-${p.id}">
@@ -575,7 +575,7 @@ function renderProducts() {
       ${p.description?`<div class="prod-desc">${p.description}</div>`:''}
       <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.5rem; margin-top:.4rem;">
         <div class="badge badge-cat">${PRODUCTS.CATS.find(c=>c.id===p.category)?.emoji||''} ${PRODUCTS.CATS.find(c=>c.id===p.category)?.label||p.category}</div>
-        ${p.stock !== '' && p.stock !== null && p.stock !== undefined ? `<div class="badge" style="background:${p.stock===0?'var(--error-bg)':p.stock<=5?'#fff3cd':'var(--bg-glass)'};color:${p.stock===0?'var(--error)':p.stock<=5?'#856404':'var(--text-secondary)'};border:1px solid ${p.stock===0?'var(--error)':'var(--border)'};">📦 ${p.stock===0?'Épuisé':p.stock}</div>` : ''}
+        ${p.stock !== '' && p.stock !== null && p.stock !== undefined ? `<div class="badge ${p.stock===0?'badge-error':p.stock<=5?'badge-warning':''}" style="background:${p.stock===0?'var(--error-bg)':p.stock<=5?'var(--warning-bg)':'var(--bg-glass)'};color:${p.stock===0?'var(--error)':p.stock<=5?'var(--warning)':'var(--text-secondary)'};border:1px solid ${p.stock===0?'var(--error)':p.stock<=5?'var(--warning)':'var(--border)'};">📦 ${p.stock===0?'Épuisé':p.stock}</div>` : ''}
       </div>
       <div class="prod-actions">
         <label class="toggle" title="${p.available?'Désactiver':'Activer'}">

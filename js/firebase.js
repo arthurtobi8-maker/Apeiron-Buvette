@@ -6,7 +6,7 @@
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBP40Z-Yb5uumF2LK8RQqwq2QWslg_Qbz0",
   authDomain: "apeiron-buvette.firebaseapp.com",
-  databaseURL: "https://apeiron-buvette-default-rtdb.firebaseio.com", // default RTDB URL pattern
+  databaseURL: "https://apeiron-buvette-default-rtdb.firebaseio.com/",
   projectId: "apeiron-buvette",
   storageBucket: "apeiron-buvette.firebasestorage.app",
   messagingSenderId: "720825889630",
@@ -23,10 +23,14 @@ const FBSYNC = {
   async push(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
-      await db.ref(this._base + '/' + key).set({
-        data: JSON.stringify(data),
-        updatedAt: firebase.database.ServerValue.TIMESTAMP
-      });
+      // Wrap in a 5-second timeout to prevent hanging
+      await Promise.race([
+        db.ref(this._base + '/' + key).set({
+          data: JSON.stringify(data),
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), 5000))
+      ]);
     } catch (e) {
       console.warn('[Firebase] Push failed, using local only:', e.message);
     }
@@ -35,7 +39,11 @@ const FBSYNC = {
   /* Read data from RTDB, fall back to localStorage */
   async pull(key) {
     try {
-      const snap = await db.ref(this._base + '/' + key).once('value');
+      // Wrap in a 5-second timeout to prevent hanging
+      const snap = await Promise.race([
+        db.ref(this._base + '/' + key).once('value'),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), 5000))
+      ]);
       if (snap.exists() && snap.val().data) {
         const value = JSON.parse(snap.val().data);
         localStorage.setItem(key, JSON.stringify(value)); // keep local in sync

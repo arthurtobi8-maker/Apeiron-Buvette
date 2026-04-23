@@ -582,3 +582,17 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
   .client-grid { grid-template-columns:repeat(2,1fr); }
   .prod-grid  { grid-template-columns:repeat(2,1fr); }
 }
+
+/* ── SKELETONS ─────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-card) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.sk-card { height: 180px; border-radius: var(--r-md); }
+.sk-tab  { width: 80px; height: 32px; border-radius: var(--r-full); display: inline-block; margin-right: .5rem; }
+.sk-title { width: 140px; height: 24px; margin-bottom: 1rem; }
+.sk-order { height: 120px; margin-bottom: 1rem; }

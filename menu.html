@@ -275,6 +275,9 @@ let activeOrderId = null;
 let orderMode = 'Sur Place';
 
 async function initMenu() {
+  // 0. Show skeletons immediately
+  renderSkeletons();
+
   // 1. Sync buvette accounts from Firebase
   await AUTH.syncFromFirebase();
 
@@ -322,6 +325,13 @@ function setOrderMode(mode) {
   document.getElementById('btnEmporter').style.background = !isSurPlace ? 'rgba(240,165,0,.08)' : 'transparent';
 
   document.getElementById('grpTable').style.display = isSurPlace ? 'flex' : 'none';
+}
+
+if (!buvette) {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('errPage').style.display = 'block';
+} else {
+  init();
 }
 
 /* Écoute de la touche Entrée sur le modal panier */
@@ -380,6 +390,17 @@ function cartCount() { return Object.values(cart).reduce((s,v)=>s+v,0); }
 
 /* ══ BUILD MENU ══════════════════════════════════════════════ */
 const CUR = buvette.currency || 'FCFA';
+
+function renderSkeletons() {
+  const tabs = document.getElementById('mnCatTabs');
+  const container = document.getElementById('menuProducts');
+  tabs.innerHTML = `<div class="skeleton sk-tab"></div><div class="skeleton sk-tab"></div><div class="skeleton sk-tab"></div>`;
+  container.innerHTML = `
+    <div class="skeleton sk-title"></div>
+    <div class="client-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-bottom:2rem;">
+      <div class="skeleton sk-card"></div><div class="skeleton sk-card"></div><div class="skeleton sk-card"></div><div class="skeleton sk-card"></div>
+    </div>`;
+}
 
 function buildMenu() {
   const prodsByCategory = {};
@@ -626,13 +647,17 @@ function showStatus(order) {
   document.getElementById('menuMode').style.display = 'none';
   document.getElementById('statusMode').style.display = 'block';
   renderStatus(order);
-  /* Poll every 2.5s */
-  clearInterval(pollTimer);
-  pollTimer = setInterval(()=>{
-    const fresh = ORDERS.getById(BID, order.id);
-    if (fresh) renderStatus(fresh);
-    if (fresh && fresh.status==='paid') clearInterval(pollTimer);
-  }, 2500);
+
+  /* Subscribe to order updates in real-time */
+  ORDERS.listen(BID, (allOrders) => {
+    const fresh = allOrders.find(o => o.id === order.id);
+    if (fresh) {
+      renderStatus(fresh);
+      if (fresh.status === 'paid') {
+        // Optionnel: confetti or something
+      }
+    }
+  });
 }
 
 function renderStatus(order) {
