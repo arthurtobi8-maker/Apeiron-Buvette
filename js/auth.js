@@ -126,4 +126,9 @@ const AUTH = {
     if (!b) window.location.href = 'login.html';
     return b;
   },
+
+  requireGuest() {
+    if (this.getCurrentBuvette()) window.location.href = 'dashboard.html';
+  }
+
 };

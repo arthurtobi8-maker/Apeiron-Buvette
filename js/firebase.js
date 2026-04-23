@@ -1,12 +1,12 @@
-/* ── APEIRON BUVETTE — FIREBASE MODULE ───────────────────────
-   Handles all Firestore synchronization.
-   Provides FBSYNC: a key/value store backed by Firestore
-   that mirrors localStorage for cross-device access.
+/* ── APEIRON BUVETTE — FIREBASE MODULE (Realtime Database) ──────
+   Handles all synchronization using Realtime DB instead of Firestore
+   to bypass billing requirements.
    ─────────────────────────────────────────────────────────── */
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBP40Z-Yb5uumF2LK8RQqwq2QWslg_Qbz0",
   authDomain: "apeiron-buvette.firebaseapp.com",
+  databaseURL: "https://apeiron-buvette-default-rtdb.firebaseio.com", // default RTDB URL pattern
   projectId: "apeiron-buvette",
   storageBucket: "apeiron-buvette.firebasestorage.app",
   messagingSenderId: "720825889630",
@@ -14,30 +14,30 @@ const FIREBASE_CONFIG = {
 };
 
 firebase.initializeApp(FIREBASE_CONFIG);
-const db = firebase.firestore();
+const db = firebase.database();
 
 const FBSYNC = {
-  _col: 'apeiron_data',
+  _base: 'apeiron_data',
 
-  /* Write data to Firestore (also keeps localStorage in sync) */
+  /* Write data to RTDB (also keeps localStorage in sync) */
   async push(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
-      await db.collection(this._col).doc(key).set({
+      await db.ref(this._base + '/' + key).set({
         data: JSON.stringify(data),
-        updatedAt: Date.now()
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
       });
     } catch (e) {
       console.warn('[Firebase] Push failed, using local only:', e.message);
     }
   },
 
-  /* Read data from Firestore, fall back to localStorage */
+  /* Read data from RTDB, fall back to localStorage */
   async pull(key) {
     try {
-      const snap = await db.collection(this._col).doc(key).get();
-      if (snap.exists && snap.data().data) {
-        const value = JSON.parse(snap.data().data);
+      const snap = await db.ref(this._base + '/' + key).once('value');
+      if (snap.exists() && snap.val().data) {
+        const value = JSON.parse(snap.val().data);
         localStorage.setItem(key, JSON.stringify(value)); // keep local in sync
         return value;
       }
@@ -49,12 +49,12 @@ const FBSYNC = {
     return local ? JSON.parse(local) : null;
   },
 
-  /* Real-time listener: fires callback whenever data changes in Firestore */
+  /* Real-time listener: fires callback whenever data changes in RTDB */
   listen(key, callback) {
-    return db.collection(this._col).doc(key).onSnapshot(snap => {
-      if (snap.exists && snap.data().data) {
+    return db.ref(this._base + '/' + key).on('value', snap => {
+      if (snap.exists() && snap.val().data) {
         try {
-          const value = JSON.parse(snap.data().data);
+          const value = JSON.parse(snap.val().data);
           localStorage.setItem(key, JSON.stringify(value));
           callback(value);
         } catch (e) { /* ignore parse errors */ }
