@@ -67,7 +67,13 @@
 </div>
 
 <div class="toast-box" id="toastBox"></div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
 <script src="js/auth.js"></script>
+
 <script>
   AUTH.requireGuest();
   let pwVisible = false;
@@ -76,7 +82,7 @@
     document.getElementById('l-pw').type = pwVisible ? 'text' : 'password';
     document.getElementById('eyeBtn').textContent = pwVisible ? '🙈' : '👁';
   }
-  document.getElementById('loginForm').onsubmit = e => {
+  document.getElementById('loginForm').onsubmit = async e => {
     e.preventDefault();
     const btn = document.getElementById('loginBtn');
     const err = document.getElementById('loginErr');
@@ -85,7 +91,7 @@
     if (!em || !pw) { err.textContent='Veuillez remplir tous les champs.'; err.classList.add('show'); return; }
     btn.disabled = true; btn.textContent = 'Connexion…';
     try {
-      AUTH.login(em, pw);
+      await AUTH.login(em, pw);
       if (document.getElementById('l-remember').checked)
         AUTH.setSession(AUTH.getCurrentBuvette().id, true);
       window.location.href = 'dashboard.html';

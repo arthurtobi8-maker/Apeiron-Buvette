@@ -1,64 +1,88 @@
-/* ── APEIRON BUVETTE — PRODUCTS MODULE ───────────────────── */
+/* ── APEIRON BUVETTE — PRODUCTS MODULE (Firebase-backed) ──────
+   Products are stored in Firestore. When the barman adds a
+   product on their PC, it appears instantly on client phones.
+   ─────────────────────────────────────────────────────────── */
 const PRODUCTS = {
   _key(bid) { return `apeiron_products_${bid}`; },
 
+  /* ── Local read (fast, synchronous) ── */
   getAll(bid) {
     return JSON.parse(localStorage.getItem(this._key(bid)) || '[]');
   },
-  save(bid, list) {
+  _saveLocal(bid, list) {
     localStorage.setItem(this._key(bid), JSON.stringify(list));
   },
 
-  add(bid, data) {
+  /* ── Sync from Firebase (called on page load) ── */
+  async syncFromFirebase(bid) {
+    const remote = await FBSYNC.pull(this._key(bid));
+    if (remote !== null) this._saveLocal(bid, remote);
+  },
+
+  /* ── Real-time listener (fires whenever barman changes products) ── */
+  listen(bid, callback) {
+    return FBSYNC.listen(this._key(bid), (data) => {
+      this._saveLocal(bid, data);
+      callback(data);
+    });
+  },
+
+  /* ── CRUD Operations (write to both local and Firebase) ── */
+  async add(bid, data) {
     const list = this.getAll(bid);
     const p = {
-      id:          Date.now().toString(36) + Math.random().toString(36).substr(2,5),
+      id:          Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
       name:        data.name,
-      category:    data.category,   // alcohol|soft|hot|food|dessert|other
-      type:        data.type,       // drink|food
+      category:    data.category,
+      type:        data.type,
       price:       parseFloat(data.price) || 0,
       description: data.description || '',
-      brandId:     data.brandId     || null,  // for drink capsule icons
-      imageData:   data.imageData   || null,  // base64 for food photos
-      stock:       (data.stock === '' || data.stock === null || data.stock === undefined) ? '' : parseInt(data.stock, 10),
-      available:   data.available   !== false,
+      brandId:     data.brandId     || null,
+      imageData:   data.imageData   || null,
+      stock:       (data.stock === '' || data.stock === null || data.stock === undefined)
+                     ? '' : parseInt(data.stock, 10),
+      available:   data.available !== false,
       createdAt:   new Date().toISOString(),
     };
     list.push(p);
-    this.save(bid, list);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
     return p;
   },
 
-  update(bid, pid, updates) {
+  async update(bid, pid, updates) {
     const list = this.getAll(bid);
     const i = list.findIndex(p => p.id === pid);
     if (i === -1) return null;
     list[i] = { ...list[i], ...updates };
-    this.save(bid, list);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
     return list[i];
   },
 
-  toggleAvail(bid, pid) {
+  async del(bid, pid) {
+    const list = this.getAll(bid).filter(p => p.id !== pid);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
+  },
+
+  async toggleAvail(bid, pid) {
     const list = this.getAll(bid);
     const i = list.findIndex(p => p.id === pid);
     if (i === -1) return;
     list[i].available = !list[i].available;
-    this.save(bid, list);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
     return list[i];
   },
 
-  updateStock(bid, pid, variation) {
+  async updateStock(bid, pid, variation) {
     const list = this.getAll(bid);
     const p = list.find(x => x.id === pid);
-    if (!p || p.stock === '') return; // Unlimited or not found
-    let newVal = p.stock + variation;
-    if (newVal < 0) newVal = 0;
-    p.stock = newVal;
-    this.save(bid, list);
-  },
-
-  del(bid, pid) {
-    this.save(bid, this.getAll(bid).filter(p => p.id !== pid));
+    if (!p || p.stock === '') return;
+    p.stock = Math.max(0, p.stock + variation);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
   },
 
   byCat(bid, cat) {
@@ -67,16 +91,16 @@ const PRODUCTS = {
   },
 
   available(bid) {
-    return this.getAll(bid).filter(p => p.available);
+    return this.getAll(bid).filter(p => p.available !== false);
   },
 
   CATS: [
-    { id:'all',     label:'Tout',          emoji:'🍽️' },
-    { id:'alcohol', label:'Bières & Alcools', emoji:'🍺' },
-    { id:'soft',    label:'Softs',         emoji:'🥤' },
-    { id:'hot',     label:'Boissons Chaudes', emoji:'☕' },
-    { id:'food',    label:'Nourritures',   emoji:'🍔' },
-    { id:'dessert', label:'Desserts',      emoji:'🍰' },
-    { id:'other',   label:'Autre',         emoji:'📦' },
+    { id:'all',     label:'Tout',              emoji:'🍽️' },
+    { id:'alcohol', label:'Bières & Alcools',   emoji:'🍺' },
+    { id:'soft',    label:'Softs',              emoji:'🥤' },
+    { id:'hot',     label:'Boissons Chaudes',   emoji:'☕' },
+    { id:'food',    label:'Nourritures',        emoji:'🍔' },
+    { id:'dessert', label:'Desserts',           emoji:'🍰' },
+    { id:'other',   label:'Autre',              emoji:'📦' },
   ],
 };

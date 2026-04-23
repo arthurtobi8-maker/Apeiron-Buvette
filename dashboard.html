@@ -437,6 +437,11 @@
 
 <div class="toast-box" id="toastBox"></div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+
 <script src="js/auth.js"></script>
 <script src="js/drinks-gallery.js"></script>
 <script src="js/food-gallery.js"></script>
@@ -444,14 +449,8 @@
 <script src="js/orders.js"></script>
 
 <script>
-/* ══ INIT ══════════════════════════════════════════════════════ */
-const buvette = AUTH.requireAuth();
-if (!buvette) throw new Error('Not auth');
-const BID = buvette.id;
-
-document.getElementById('sbName').textContent = buvette.name;
-document.title = `${buvette.name} — Dashboard`;
-
+/* ══ INIT (async — waits for Firebase sync) ══════════════════ */
+let buvette, BID;
 let currentCat  = 'all';
 let editingProd = null;
 let deletingId  = null;
@@ -460,7 +459,48 @@ let selectedBrandId = null;
 let galCat      = 'all';
 let foodGalCat  = 'all';
 let foodPhotoData = null;
-let sThemeColor = buvette.themeColor || '#f0a500';
+let sThemeColor = '#f0a500';
+
+async function initDashboard() {
+  // Show loading state
+  document.body.style.opacity = '0.5';
+  document.body.style.pointerEvents = 'none';
+
+  try {
+    // 1. Sync accounts from Firebase (so login works on any device)
+    await AUTH.syncFromFirebase();
+
+    // 2. Get current session
+    buvette = AUTH.requireAuth();
+    if (!buvette) return;
+    BID = buvette.id;
+
+    document.getElementById('sbName').textContent = buvette.name;
+    document.title = `${buvette.name} — Dashboard`;
+    sThemeColor = buvette.themeColor || '#f0a500';
+
+    // 3. Sync products and orders from Firebase
+    await PRODUCTS.syncFromFirebase(BID);
+    await ORDERS.syncFromFirebase(BID);
+
+  } catch(e) {
+    console.error('Init error:', e);
+  } finally {
+    document.body.style.opacity = '';
+    document.body.style.pointerEvents = '';
+  }
+
+  // 4. Render the UI
+  buildCatTabs();
+  renderProducts();
+  renderOrders();
+
+  // 5. Set up real-time listeners so UI updates automatically
+  PRODUCTS.listen(BID, () => { buildCatTabs(); renderProducts(); });
+  ORDERS.listen(BID, () => { renderOrders(); updateOrderBadge(); });
+}
+
+initDashboard();
 
 /* Écoute de la touche Entrée sur le modal produit */
 document.getElementById('prodModal').addEventListener('keydown', function(e) {

@@ -254,6 +254,12 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+
 <script src="js/auth.js"></script>
 <script src="js/drinks-gallery.js"></script>
 <script src="js/products.js"></script>
@@ -261,21 +267,48 @@
 <script src="js/pdf.js"></script>
 
 <script>
-/* ══ INIT ════════════════════════════════════════════════════ */
-const params   = new URLSearchParams(location.search);
-let BID        = params.get('buvette');
+/* ══ INIT (async — syncs from Firebase first) ════════════ */
+const params = new URLSearchParams(location.search);
+let BID      = params.get('buvette');
+let buvette  = null;
+let activeOrderId = null;
+let orderMode = 'Sur Place';
 
-// Auto-detect BID if missing but user is logged in
-if (!BID) {
-  const loggedUser = AUTH.getBuvette();
-  if (loggedUser) BID = loggedUser.id;
+async function initMenu() {
+  // 1. Sync buvette accounts from Firebase
+  await AUTH.syncFromFirebase();
+
+  // 2. Determine BID
+  if (!BID) {
+    const logged = AUTH.getCurrentBuvette();
+    if (logged) BID = logged.id;
+  }
+
+  buvette = BID ? AUTH.getBuvetteById(BID) : null;
+
+  if (!buvette) {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('errPage').style.display = 'block';
+    return;
+  }
+
+  // 3. Sync products from Firebase
+  await PRODUCTS.syncFromFirebase(BID);
+  await ORDERS.syncFromFirebase(BID);
+
+  // 4. Restore pending order
+  activeOrderId = sessionStorage.getItem(`apeiron_order_${BID}`) || null;
+
+  // 5. Render
+  init();
+
+  // 6. Real-time: if barman adds/removes a product, menu updates automatically
+  PRODUCTS.listen(BID, () => {
+    buildMenu();
+  });
 }
 
-const buvette  = BID ? AUTH.getBuvetteById(BID) : null;
-
-// Restore pending order from sessionStorage
-let activeOrderId = sessionStorage.getItem(`apeiron_order_${BID}`) || null;
-let orderMode = 'Sur Place';
+initMenu();
 
 function setOrderMode(mode) {
   orderMode = mode;
