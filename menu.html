@@ -324,13 +324,6 @@ function setOrderMode(mode) {
   document.getElementById('grpTable').style.display = isSurPlace ? 'flex' : 'none';
 }
 
-if (!buvette) {
-  document.getElementById('loader').style.display = 'none';
-  document.getElementById('errPage').style.display = 'block';
-} else {
-  init();
-}
-
 /* Écoute de la touche Entrée sur le modal panier */
 document.getElementById('cartModal').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
