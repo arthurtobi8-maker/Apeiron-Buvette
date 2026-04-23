@@ -389,29 +389,49 @@ function cartCount() { return Object.values(cart).reduce((s,v)=>s+v,0); }
 const CUR = buvette.currency || 'FCFA';
 
 function buildMenu() {
-  const container = document.getElementById('menuProducts');
-  const allAvailable = PRODUCTS.getAll(BID); // Get EVERYTHING, no filters
+  const prodsByCategory = {};
+  const availableProds = PRODUCTS.available(BID);
   
-  console.log("FORCE DEBUG: Products found in storage:", allAvailable);
+  PRODUCTS.CATS.filter(c=>c.id!=='all').forEach(c => {
+    const prods = availableProds.filter(p=>p.category===c.id);
+    if (prods.length) prodsByCategory[c.id] = { meta:c, prods };
+  });
 
-  if (!allAvailable.length) {
-    container.innerHTML = `
+  // Handle products with missing or custom categories
+  const uncategorized = availableProds.filter(p => !PRODUCTS.CATS.find(c => c.id === p.category));
+  if (uncategorized.length) {
+    prodsByCategory['other'] = prodsByCategory['other'] || { meta: PRODUCTS.CATS.find(c => c.id === 'other'), prods: [] };
+    prodsByCategory['other'].prods = [...prodsByCategory['other'].prods, ...uncategorized];
+  }
+
+  if (!Object.keys(prodsByCategory).length) {
+    document.getElementById('menuProducts').innerHTML = `
       <div class="mn-empty">
-        <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
-        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">Aucun produit trouvé</div>
-        <div style="color:var(--text-secondary);font-size:.88rem;">Assurez-vous d'avoir ajouté des produits dans le Dashboard pour l'ID : ${BID}</div>
+        <div style="font-size:3rem;margin-bottom:1rem;">🍽️</div>
+        <div style="font-family:var(--font-d);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;">Menu en préparation</div>
+        <div style="color:var(--text-secondary);font-size:.88rem;">Revenez bientôt !</div>
       </div>`;
+    document.getElementById('mnCatTabs').innerHTML = '';
     return;
   }
 
-  container.innerHTML = `
-    <section class="cat-section">
-      <h3 class="cat-section-title">🍽️ Notre Carte</h3>
-      <div class="mn-grid">
-        ${allAvailable.map(p => prodCard(p)).join('')}
+  /* Tab bar */
+  const tabs = document.getElementById('mnCatTabs');
+  tabs.innerHTML = Object.keys(prodsByCategory).map((cid,i) => {
+    const meta = prodsByCategory[cid].meta;
+    return `<div class="cat-tab ${i===0?'active':''}" data-cat="${cid}" onclick="scrollToSection('${cid}',this)">${meta.emoji} ${meta.label}</div>`;
+  }).join('');
+
+  /* Sections */
+  const container = document.getElementById('menuProducts');
+  container.innerHTML = Object.entries(prodsByCategory).map(([cid,{meta,prods}]) =>
+    `<div class="cat-section" id="cat-${cid}">
+      <h3 class="cat-section-title">${meta.emoji} ${meta.label}</h3>
+      <div class="client-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem;margin-bottom:2rem;">
+        ${prods.map(prodCard).join('')}
       </div>
-    </section>
-  `;
+    </div>`
+  ).join('');
 }
 
 function prodCard(p) {
