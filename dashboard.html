@@ -497,7 +497,11 @@ async function initDashboard() {
 
   // 5. Set up real-time listeners so UI updates automatically
   PRODUCTS.listen(BID, () => { buildCatTabs(); renderProducts(); });
-  ORDERS.listen(BID, () => { renderOrders(); updateOrderBadge(); });
+    ORDERS.listen(BID, (all) => { 
+      renderOrders(); 
+      const pending = all.filter(o => o.status === 'pending').length;
+      updateBadge(pending); 
+    });
 }
 
 initDashboard();
@@ -861,18 +865,36 @@ function orderCard(o) {
     </div>
     <div class="order-client">👤 ${o.clientName}${o.tableInfo?' · '+o.tableInfo:''}</div>
     <div class="order-items">
-      ${o.items.map(it=>`<div class="order-item-row"><span>${it.qty}× ${it.name}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
+      ${o.items.map((it, idx)=>`<div class="order-item-row">
+        <span>${it.qty}× ${it.name}</span>
+        <span class="editable-price" onclick="promptEditPrice('${o.id}', ${idx}, ${it.price})" style="cursor:pointer; color:var(--gold); font-weight:700;" title="Modifier le prix">
+          ${fmt(it.price*it.qty)} ✏️
+        </span>
+      </div>`).join('')}
     </div>
     <div class="order-total"><span>Total</span><span class="order-total-amt">${fmt(o.total)}</span></div>
     ${actions}
   </div>`;
 }
 
-function setOrderStatus(oid, status) {
-  ORDERS.updateStatus(BID, oid, status);
+async function promptEditPrice(oid, idx, currentPrice) {
+  const newPrice = prompt("Entrez le nouveau prix unitaire :", currentPrice);
+  if (newPrice !== null && !isNaN(newPrice)) {
+    await ORDERS.updateItemPrice(BID, oid, idx, newPrice);
+    renderOrders();
+    toast('Prix mis à jour 💸','success');
+  }
+}
+
+async function setOrderStatus(oid, status) {
+  await ORDERS.updateStatus(BID, oid, status);
+  if (status === 'paid') {
+    const order = ORDERS.getById(BID, oid);
+    if (order) await ORDERS.deductStock(BID, order.items);
+    toast('Commande marquée payée ✅','success');
+  }
+  if (status === 'preparing') toast('Commande en préparation 👨‍🍳','info');
   renderOrders();
-  if (status==='paid') toast('Commande marquée payée ✅','success');
-  if (status==='preparing') toast('Commande en préparation 👨‍🍳','info');
 }
 
 function downloadTicket(oid) {
@@ -908,25 +930,24 @@ function renderStats() {
     { icon:'🏆', val:s.topProduct, lbl:`Meilleure vente (×${s.topCount})` },
   ].map(c=>`<div class="stat-card"><div class="stat-icon">${c.icon}</div><div class="stat-val">${c.val}</div><div class="stat-lbl">${c.lbl}</div></div>`).join('');
 
-  /* Top products */
-  const paid = ORDERS.today(BID).filter(o=>o.status==='paid');
-  const counts = {};
-  paid.forEach(o => o.items.forEach(it => { counts[it.name]=(counts[it.name]||0)+it.qty; }));
-  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  /* Top products — use pre-computed top5 from stats() */
   const tp = document.getElementById('topProducts');
-  if (!sorted.length) { tp.innerHTML = '<div class="empty-desc" style="text-align:center;padding:1.5rem;">Aucune vente aujourd\'hui</div>'; return; }
-  const max = sorted[0][1];
-  tp.innerHTML = sorted.map(([name,qty],i) => `
-    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
-      <span style="font-family:var(--font-d);font-weight:700;font-size:.85rem;color:var(--gold);width:1.2rem;">${i+1}</span>
-      <div style="flex:1;">
-        <div style="font-size:.88rem;font-weight:500;margin-bottom:.25rem;">${name}</div>
-        <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;">
-          <div style="height:100%;width:${(qty/max*100).toFixed(0)}%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:3px;"></div>
+  if (!s.top5.length) {
+    tp.innerHTML = '<div class="empty-desc" style="text-align:center;padding:1.5rem;">Aucune vente aujourd\'hui</div>';
+  } else {
+    const max = s.top5[0][1];
+    tp.innerHTML = s.top5.map(([name, qty], i) => `
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
+        <span style="font-family:var(--font-d);font-weight:700;font-size:.85rem;color:var(--gold);width:1.2rem;">${i + 1}</span>
+        <div style="flex:1;">
+          <div style="font-size:.88rem;font-weight:500;margin-bottom:.25rem;">${name}</div>
+          <div style="height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${(qty / max * 100).toFixed(0)}%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:3px;"></div>
+          </div>
         </div>
-      </div>
-      <span style="font-size:.82rem;color:var(--text-muted);">×${qty}</span>
-    </div>`).join('');
+        <span style="font-size:.82rem;color:var(--text-muted);">×${qty}</span>
+      </div>`).join('');
+  }
 
   drawChart();
 }
@@ -939,52 +960,43 @@ function drawChart() {
   const W = canvas.width, H = canvas.height;
   const pad = { t:20, r:20, b:40, l:60 };
 
-  /* Build 7-day data */
-  const days = [];
-  for (let i=6; i>=0; i--) {
-    const d = new Date(); d.setDate(d.getDate()-i);
-    days.push({ label: d.toLocaleDateString('fr-FR',{weekday:'short'}), date: d.toDateString() });
-  }
-  const all = ORDERS.getAll(BID).filter(o=>o.status==='paid');
-  const data = days.map(d => ({
-    label: d.label,
-    val: all.filter(o=>new Date(o.createdAt).toDateString()===d.date).reduce((s,o)=>s+o.total,0),
-  }));
-  const maxVal = Math.max(...data.map(d=>d.val), 1);
+  /* Use ORDERS.revenue7days() — no date logic duplication */
+  const data   = ORDERS.revenue7days(BID, 7);
+  const maxVal = Math.max(...data.map(d => d.val), 1);
   const barW   = (W - pad.l - pad.r) / data.length;
 
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
 
   /* Grid lines */
-  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-  [0.25,0.5,0.75,1].forEach(f => {
-    const y = pad.t + (H-pad.t-pad.b)*(1-f);
-    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='10px Inter'; ctx.textAlign='right';
-    ctx.fillText((maxVal*f).toFixed(0), pad.l-6, y+4);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    const y = pad.t + (H - pad.t - pad.b) * (1 - f);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.font = '10px Inter'; ctx.textAlign = 'right';
+    ctx.fillText((maxVal * f).toFixed(0), pad.l - 6, y + 4);
   });
 
   /* Bars */
   data.forEach((d, i) => {
-    const bh = ((H-pad.t-pad.b) * (d.val/maxVal));
-    const bx = pad.l + i*barW + barW*.15;
-    const by = H - pad.b - bh;
-    const bww = barW * .7;
+    const bh  = (H - pad.t - pad.b) * (d.val / maxVal);
+    const bx  = pad.l + i * barW + barW * 0.15;
+    const by  = H - pad.b - bh;
+    const bww = barW * 0.7;
 
-    const grad = ctx.createLinearGradient(0,by,0,by+bh);
-    grad.addColorStop(0,'rgba(240,165,0,.9)');
-    grad.addColorStop(1,'rgba(232,93,4,.5)');
+    const grad = ctx.createLinearGradient(0, by, 0, by + bh);
+    grad.addColorStop(0, 'rgba(240,165,0,.9)');
+    grad.addColorStop(1, 'rgba(232,93,4,.5)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.roundRect(bx, by, bww, bh, [4,4,0,0]);
+    ctx.roundRect(bx, by, bww, bh, [4, 4, 0, 0]);
     ctx.fill();
 
-    /* Label */
-    ctx.fillStyle='rgba(144,144,168,0.8)'; ctx.font='10px Inter'; ctx.textAlign='center';
-    ctx.fillText(d.label, pad.l + i*barW + barW/2, H-pad.b+14);
+    /* Day label */
+    ctx.fillStyle = 'rgba(144,144,168,0.8)'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(d.label, pad.l + i * barW + barW / 2, H - pad.b + 14);
     if (d.val > 0) {
-      ctx.fillStyle='rgba(240,165,0,.9)'; ctx.font='bold 9px Inter';
-      ctx.fillText(d.val.toFixed(0), pad.l + i*barW + barW/2, by-5);
+      ctx.fillStyle = 'rgba(240,165,0,.9)'; ctx.font = 'bold 9px Inter';
+      ctx.fillText(d.val.toFixed(0), pad.l + i * barW + barW / 2, by - 5);
     }
   });
 }
@@ -1144,21 +1156,9 @@ function renderRegister() {
 }
 
 /* ══ START ══ */
-buildCatTabs();
-renderProducts();
-renderOrders(); // Force initial render
-renderStats();  // Force initial render
-loadSettings(); // Force initial render
-setInterval(pollOrders, 3000);
-
-/* jsPDF lazy load */
-window.addEventListener('load', () => {
-  if (!window.jspdf) {
-    const s1 = document.createElement('script');
-    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    document.head.appendChild(s1);
-  }
-});
+// Initialization is handled by initDashboard() above.
+// Keep order badge and list fresh every 15 seconds (as a safety net alongside the real-time listener).
+setInterval(pollOrders, 15000);
 </script>
 </body>
 </html>

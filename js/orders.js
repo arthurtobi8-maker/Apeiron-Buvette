@@ -48,7 +48,7 @@ const ORDERS = {
   },
 
   /* ── Update order status ── */
-  async setStatus(bid, oid, status) {
+  async updateStatus(bid, oid, status) {
     const list = this.getAll(bid);
     const i = list.findIndex(o => o.id === oid);
     if (i === -1) return null;
@@ -59,14 +59,80 @@ const ORDERS = {
     return list[i];
   },
 
+  async updateItemPrice(bid, oid, itemIdx, newPrice) {
+    const list = this.getAll(bid);
+    const i = list.findIndex(o => o.id === oid);
+    if (i === -1) return null;
+    list[i].items[itemIdx].price = parseFloat(newPrice) || 0;
+    // Recalculate total
+    list[i].total = list[i].items.reduce((s, it) => s + it.price * it.qty, 0);
+    this._saveLocal(bid, list);
+    await FBSYNC.push(this._key(bid), list);
+    return list[i];
+  },
+
   getById(bid, oid) {
     return this.getAll(bid).find(o => o.id === oid) || null;
   },
 
-  async clearPaid(bid) {
+  async archivePaid(bid) {
     const list = this.getAll(bid).filter(o => o.status !== 'paid');
     this._saveLocal(bid, list);
     await FBSYNC.push(this._key(bid), list);
+  },
+
+  /* Get orders from today */
+  today(bid) {
+    const todayStr = new Date().toDateString();
+    return this.getAll(bid).filter(o => new Date(o.createdAt).toDateString() === todayStr);
+  },
+
+  /* ── Calculate stats for today ── */
+  stats(bid) {
+    const todayOrders = this.today(bid);
+    const paid = todayOrders.filter(o => o.status === 'paid');
+
+    const revenue = paid.reduce((s, o) => s + o.total, 0);
+
+    /* Count sold quantities per product name */
+    const counts = {};
+    paid.forEach(o => o.items.forEach(it => {
+      counts[it.name] = (counts[it.name] || 0) + it.qty;
+    }));
+
+    const sorted   = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const top5     = sorted.slice(0, 5);
+    const topEntry = sorted[0] || ['Aucun', 0];
+
+    return {
+      revenue,
+      total:      todayOrders.length,
+      paid:       paid.length,
+      pending:    todayOrders.filter(o => o.status !== 'paid').length,
+      topProduct: topEntry[0],
+      topCount:   topEntry[1],
+      top5,          // [ [name, qty], … ] — top 5 best sellers today
+    };
+  },
+
+  /* ── Revenue per day over the last N days (default 7) ── */
+  revenue7days(bid, n = 7) {
+    const days = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push({
+        label:   d.toLocaleDateString('fr-FR', { weekday: 'short' }),
+        dateStr: d.toDateString(),
+      });
+    }
+    const paidOrders = this.getAll(bid).filter(o => o.status === 'paid');
+    return days.map(d => ({
+      label: d.label,
+      val:   paidOrders
+               .filter(o => new Date(o.createdAt).toDateString() === d.dateStr)
+               .reduce((s, o) => s + o.total, 0),
+    }));
   },
 
   /* Stock deduction when order is confirmed */
@@ -74,7 +140,7 @@ const ORDERS = {
     const products = PRODUCTS.getAll(bid);
     items.forEach(it => {
       const p = products.find(x => x.id === it.productId);
-      if (p && p.stock !== '' && p.stock > 0) {
+      if (p && p.stock !== '' && p.stock !== null && p.stock !== undefined) {
         p.stock = Math.max(0, p.stock - it.qty);
       }
     });

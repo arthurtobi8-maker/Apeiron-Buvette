@@ -585,14 +585,102 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
 
 /* ── SKELETONS ─────────────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-card) 50%, var(--bg-elevated) 75%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--r-sm);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
 .sk-card { height: 180px; border-radius: var(--r-md); }
 .sk-tab  { width: 80px; height: 32px; border-radius: var(--r-full); display: inline-block; margin-right: .5rem; }
 .sk-title { width: 140px; height: 24px; margin-bottom: 1rem; }
 .sk-order { height: 120px; margin-bottom: 1rem; }
+
+/* ── LOADER (menu.html #loader) ─────────────────────────────── */
+#loader {
+  position: fixed; inset: 0; background: var(--bg-deep);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9999; gap: 1rem; transition: opacity 0.4s var(--ease);
+}
+.loader-spin {
+  width: 46px; height: 46px; border: 3px solid var(--border);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loader-text {
+  font-family: var(--font-d); font-size: 1rem; font-weight: 700;
+  color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+/* ── MENU HEADER ELEMENTS ───────────────────────────────────── */
+.mn-info {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 0.5rem; margin-top: 1rem;
+}
+.mn-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: var(--r-full); padding: 0.3rem 0.85rem;
+  font-size: 0.78rem; color: var(--text-secondary); font-weight: 500;
+}
+.mn-logo-ph {
+  width: 100%; height: 100%; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 2.5rem; font-weight: 800; color: #fff;
+}
+
+/* ── STATUS PAGE (menu.html) ────────────────────────────────── */
+.s-title {
+  font-family: var(--font-d); font-size: 1.6rem; font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+.s-sub {
+  color: var(--text-secondary); font-size: 0.9rem;
+  margin-bottom: 1.5rem; line-height: 1.6;
+}
+.s-order-num {
+  color: var(--gold); font-weight: 700; font-family: var(--font-d);
+}
+.s-items-recap {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 1rem; margin: 1rem 0; text-align: left;
+  width: 100%; max-width: 340px;
+}
+.s-item-line {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.45rem 0; font-size: 0.86rem; color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.s-item-line:last-child { border-bottom: none; }
+.s-total {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.75rem 0 0; margin-top: 0.4rem;
+  font-family: var(--font-d); font-weight: 800; font-size: 1.05rem;
+  border-top: 1px solid var(--border-gold);
+}
+
+/* ── UNAVAILABLE CARD (menu.html) ──────────────────────────── */
+.mn-card.unavail {
+  opacity: 0.45; cursor: not-allowed; pointer-events: none;
+}
+.mn-card.unavail:hover { transform: none !important; box-shadow: none !important; }
+
+/* ── DOWNLOAD TICKET BUTTON ─────────────────────────────────── */
+.dl-btn {
+  background: linear-gradient(135deg, var(--gold), var(--orange));
+  color: #fff; box-shadow: var(--shadow-btn);
+}
+.dl-btn:hover { box-shadow: 0 6px 25px rgba(240,165,0,0.5); transform: translateY(-2px); }
+
+/* ── CART MODAL ITEMS ───────────────────────────────────────── */
+.cart-item-cap   { width: 40px; height: 40px; flex-shrink: 0; }
+.cart-item-photo {
+  width: 40px; height: 40px; border-radius: 6px;
+  object-fit: cover; flex-shrink: 0;
+}
+.cart-item-price {
+  font-family: var(--font-d); font-weight: 700;
+  color: var(--gold); font-size: 0.9rem; white-space: nowrap;
+}
+
