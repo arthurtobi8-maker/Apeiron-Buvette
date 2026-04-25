@@ -3,14 +3,6 @@
 
 [build]
   publish = "."
-
-# Single-page friendly redirects (all routes serve index.html as fallback)
-[[redirects]]
-  from   = "/*"
-  to     = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}  # only applies if auth is ever added
-
 # Cache static assets aggressively
 [[headers]]
   for = "/css/*"

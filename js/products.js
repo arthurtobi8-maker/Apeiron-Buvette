@@ -7,10 +7,11 @@ const PRODUCTS = {
 
   /* ── Local read (fast, synchronous) ── */
   getAll(bid) {
-    return JSON.parse(localStorage.getItem(this._key(bid)) || '[]');
+    const data = JSON.parse(localStorage.getItem(this._key(bid)) || '[]');
+    return Array.isArray(data) ? data : [];
   },
   _saveLocal(bid, list) {
-    localStorage.setItem(this._key(bid), JSON.stringify(list));
+    localStorage.setItem(this._key(bid), JSON.stringify(list || []));
   },
 
   /* ── Sync from Firebase (called on page load) ── */
