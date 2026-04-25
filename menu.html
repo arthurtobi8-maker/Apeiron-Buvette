@@ -541,11 +541,15 @@ let searchQuery  = '';
 let specialTargetGroup = 'drinks';
 
 function openSpecialModal(gid) {
-  setSpecialType(gid || 'drinks');
-  const txt = document.getElementById('specialText');
-  if (txt) {
-    txt.value = '';
-    setTimeout(() => txt.focus(), 100);
+  try {
+    setSpecialType(gid || 'drinks');
+    const txt = document.getElementById('specialText');
+    if (txt) {
+      txt.value = '';
+      setTimeout(() => txt.focus(), 100);
+    }
+  } catch(e) {
+    console.error("Special modal prep error:", e);
   }
   openModal('specialModal');
 }
