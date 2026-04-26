@@ -792,7 +792,7 @@ function changeQty(pid, delta) {
   if (cartCount()===0) closeModal('cartModal');
 }
 
-function sendOrder() {
+async function sendOrder() {
   const name = document.getElementById('clientName').value.trim();
   if (!name) {
     document.getElementById('orderErr').textContent='Votre prénom est requis.';
@@ -818,7 +818,7 @@ function sendOrder() {
   const btn = document.getElementById('sendOrderBtn');
   btn.disabled=true; btn.textContent='Envoi en cours…';
 
-  const order = ORDERS.create(BID, {
+  const order = await ORDERS.create(BID, {
     clientName: name,
     tableInfo:  tInfo,
     items,
