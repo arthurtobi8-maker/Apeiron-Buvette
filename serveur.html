@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Serveur — Apeiron Buvette</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>👨‍🍳</text></svg>">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    :root { 
+      --theme: #f0a500; 
+      --bg-deep: #030305;
+      --glass: rgba(255,255,255,0.03);
+      --glass-border: rgba(255,255,255,0.08);
+    }
+    body { background: var(--bg-deep); color: #fff; font-family: var(--font-b); margin: 0; }
+    
+    .sv-container { display: flex; flex-direction: column; height: 100vh; }
+    .sv-header { 
+      padding: 1.5rem 2rem; background: var(--glass); border-bottom: 1px solid var(--glass-border);
+      display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(20px);
+    }
+    .sv-name { font-family: var(--font-d); font-weight: 900; font-size: 1.25rem; color: var(--theme); }
+    .sv-logout { color: var(--text-muted); cursor: pointer; font-size: .85rem; font-weight: 700; }
+
+    .sv-body { flex: 1; padding: 2rem; overflow-y: auto; }
+    .orders-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    @media (max-width: 900px) { .orders-cols { grid-template-columns: 1fr; } }
+
+    .orders-col-title { 
+      font-family: var(--font-d); font-weight: 800; font-size: 1rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: .75rem; color: var(--text-secondary);
+    }
+
+    /* Cards */
+    .order-card {
+      background: var(--glass); border: 1px solid var(--glass-border);
+      border-radius: var(--r-lg); padding: 1.5rem; margin-bottom: 1.25rem;
+      transition: all 0.3s; position: relative; overflow: hidden;
+    }
+    .order-hdr { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+    .order-num { font-family: var(--font-d); font-weight: 900; font-size: 1.1rem; }
+    .order-client { font-size: .85rem; color: var(--text-muted); font-weight: 600; }
+    .order-items { margin-bottom: 1.25rem; }
+    .order-it { display: flex; justify-content: space-between; font-size: .9rem; margin-bottom: .4rem; }
+    .order-it-qty { color: var(--theme); font-weight: 800; margin-right: .5rem; }
+    .order-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--glass-border); padding-top: 1rem; }
+    .order-total { font-family: var(--font-d); font-weight: 900; font-size: 1.2rem; color: var(--theme); }
+
+    .btn-action { width: 100%; margin-top: 1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .badge-pending { background: rgba(240,165,0,.15); color: #f0a500; }
+    .badge-preparing { background: rgba(0,180,216,.15); color: #00b4d8; }
+    .badge-paid { background: rgba(43,203,186,.15); color: #2bcbba; }
+    
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); opacity: 0.5; }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* Sound alert */
+    .toast-box { position: fixed; top: 1rem; right: 1rem; z-index: 1000; }
+    .toast { background: #fff; color: #000; padding: 1rem 1.5rem; border-radius: var(--r-md); margin-bottom: .5rem; display: flex; align-items: center; gap: .75rem; font-weight: 700; transform: translateX(120%); transition: 0.4s; }
+    .toast.show { transform: translateX(0); }
+  </style>
+</head>
+<body>
+
+<div class="sv-container">
+  <div class="sv-header">
+    <div class="sv-name" id="svName">Apeiron Buvette — Serveur</div>
+    <div style="display:flex; align-items:center; gap:1.5rem;">
+      <button class="btn btn-primary btn-sm" onclick="closeDay()" style="font-size:.78rem; background:var(--theme); color:#000;">💰 Clôturer la journée</button>
+      <div class="sv-logout" onclick="AUTH.logout()">Déconnexion 🚪</div>
+    </div>
+  </div>
+
+  <div class="sv-body">
+    <div class="orders-cols">
+      <div>
+        <div class="orders-col-title">⏳ Commandes à servir <span class="badge badge-pending" id="pendingCount">0</span></div>
+        <div id="colPending"></div>
+      </div>
+      <div>
+        <div class="orders-col-title">✅ Payées <span class="badge badge-paid" id="paidCount">0</span></div>
+        <div id="colPaid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+<audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="js/firebase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/orders.js"></script>
+
+<script>
+let buvette, BID;
+let lastPendingCount = 0;
+
+async function init() {
+  try {
+    await AUTH.syncFromFirebase();
+    buvette = AUTH.requireAuth();
+    if (!buvette) return;
+    BID = buvette.id;
+
+    document.getElementById('svName').textContent = `${buvette.name} — Serveur`;
+    document.documentElement.style.setProperty('--theme', buvette.themeColor || '#f0a500');
+
+    await ORDERS.syncFromFirebase(BID);
+    renderOrders();
+
+    ORDERS.listen(BID, (all) => {
+      const pendingCount = all.filter(o => o.status === 'pending' && !o.archived).length;
+      if (pendingCount > lastPendingCount) {
+        document.getElementById('ding').play().catch(e => console.log(e));
+        toast('Nouvelle commande ! 🔔', 'success');
+      }
+      lastPendingCount = pendingCount;
+      renderOrders();
+    });
+
+  } catch(e) { console.error(e); }
+}
+
+function renderOrders() {
+  const all     = ORDERS.getAll(BID).filter(o => !o.archived);
+  const active  = all.filter(o => o.status !== 'paid');
+  const paid    = all.filter(o => o.status === 'paid').slice(0, 30);
+
+  document.getElementById('pendingCount').textContent = active.length;
+  document.getElementById('paidCount').textContent    = paid.length;
+
+  document.getElementById('colPending').innerHTML = active.length
+    ? active.map(orderCard).join('')
+    : `<div class="empty-state"><div class="empty-icon">😴</div><div class="empty-title">Aucune commande active</div></div>`;
+    
+  document.getElementById('colPaid').innerHTML = paid.length
+    ? paid.map(orderCard).join('')
+    : `<div class="empty-state"><div class="empty-icon">💤</div><div class="empty-title">Aucune commande payée</div></div>`;
+}
+
+function orderCard(o) {
+  const t = new Date(o.createdAt);
+  const timeStr = t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const cur = buvette.currency || 'FCFA';
+  
+  const statusBadge = o.status==='pending'
+    ? '<span class="badge badge-pending">⏳ En attente</span>'
+    : o.status==='preparing'
+      ? '<span class="badge badge-preparing">👨‍🍳 En cours de service</span>'
+      : '<span class="badge badge-paid">✅ Payée</span>';
+
+  const itemsHtml = o.items.map(it => `
+    <div class="order-it">
+      <span><span class="order-it-qty">${it.qty}×</span> ${it.name}</span>
+      <span>${Number(it.price * it.qty).toLocaleString('fr-FR')} ${cur}</span>
+    </div>
+  `).join('');
+
+  let actionBtn = '';
+  if (o.status === 'pending') {
+    actionBtn = `<button class="btn btn-primary btn-action" onclick="updateStatus('${o.id}','preparing')">🚀 Servir la commande</button>`;
+  } else if (o.status === 'preparing') {
+    actionBtn = `<button class="btn btn-success btn-action" onclick="updateStatus('${o.id}','paid')">✅ Marquer comme payée</button>`;
+  }
+
+  return `
+    <div class="order-card">
+      <div class="order-hdr">
+        <div>
+          <div class="order-num">${o.orderNumber}</div>
+          <div class="order-client">${o.clientName} ${o.tableInfo?`— ${o.tableInfo}`:''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:.7rem;color:var(--text-muted);margin-bottom:.3rem;">${timeStr}</div>
+          ${statusBadge}
+        </div>
+      </div>
+      <div class="order-items">${itemsHtml}</div>
+      <div class="order-footer">
+        <span>Total</span>
+        <span class="order-total">${Number(o.total).toLocaleString('fr-FR')} ${cur}</span>
+      </div>
+      ${actionBtn}
+    </div>
+  `;
+}
+
+function updateStatus(oid, status) {
+  ORDERS.updateStatus(BID, oid, status);
+  toast('Statut mis à jour !', 'success');
+}
+
+function closeDay() {
+  const all = ORDERS.getAll(BID).filter(o => o.status === 'paid' && !o.archived);
+  if (all.length === 0) { toast('Aucune commande payée.', 'warning'); return; }
+  
+  const total = all.reduce((s, o) => s + o.total, 0);
+  const cur = buvette.currency || 'FCFA';
+  const confirmed = window.confirm(`Clôturer la journée ?\n\nTotal : ${total.toLocaleString('fr-FR')} ${cur}\nCommandes : ${all.length}`);
+  
+  if (confirmed) {
+    ORDERS.archivePaid(BID).then(() => {
+      renderOrders();
+      toast('Journée clôturée !', 'success');
+    });
+  }
+}
+
+function toast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  document.getElementById('toastBox').appendChild(t);
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>

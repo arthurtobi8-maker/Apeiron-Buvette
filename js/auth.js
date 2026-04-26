@@ -69,29 +69,33 @@ const AUTH = {
     return b;
   },
 
-  /* ── Login ── */
   async login(email, password) {
-    await this.syncFromFirebase(); // Always check latest from Firebase
+    await this.syncFromFirebase(); 
     const list = this.getBuvettes();
     const b = list.find(x => x.email === email);
     if (!b) throw new Error('Email introuvable.');
-    const stored = decodeURIComponent(escape(atob(b.password)));
-    
-    let role = 'admin';
-    if (stored !== password) {
-      if (b.waiterPassword && b.waiterPassword === password) {
-        role = 'waiter';
-      } else {
-        throw new Error('Mot de passe incorrect.');
+
+    // Check Admin
+    const adminPwd = decodeURIComponent(escape(atob(b.password)));
+    if (adminPwd === password) {
+      this.setSession(b.id, 'admin');
+      return { ...b, role: 'admin' };
+    }
+
+    // Check Waiter
+    if (b.waiterPassword) {
+      const waiterPwd = decodeURIComponent(escape(atob(b.waiterPassword)));
+      if (waiterPwd === password) {
+        this.setSession(b.id, 'waiter');
+        return { ...b, role: 'waiter' };
       }
     }
-    
-    this.setSession(b.id, false, role);
-    return { ...b, role };
+
+    throw new Error('Mot de passe incorrect.');
   },
 
   /* ── Session management (local only — per device) ── */
-  setSession(buvetteId, remember = false, role = 'admin') {
+  setSession(buvetteId, role = 'admin', remember = false) {
     localStorage.setItem(this.SESSION_KEY, JSON.stringify({
       buvetteId,
       role,
@@ -109,9 +113,8 @@ const AUTH = {
   getCurrentBuvette() {
     const s = this.getSession();
     if (!s) return null;
-    const b = this.getBuvettes().find(b => b.id === s.buvetteId);
-    if (!b) return null;
-    return { ...b, role: s.role || 'admin' };
+    const b = this.getBuvetteById(s.buvetteId);
+    return b ? { ...b, role: s.role || 'admin' } : null;
   },
 
   getBuvetteById(id) {

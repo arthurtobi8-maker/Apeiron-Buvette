@@ -240,6 +240,24 @@
       to { opacity: 0.8; transform: scale(1.1); } 
     }
 
+    .sub-tabs {
+      display: flex; gap: 0.75rem; overflow-x: auto; padding: 0.5rem 2rem;
+      scrollbar-width: none; -ms-overflow-style: none;
+      margin-top: 1.5rem;
+    }
+    .sub-tabs::-webkit-scrollbar { display: none; }
+    .sub-tab {
+      padding: 0.6rem 1.25rem; border-radius: var(--r-full);
+      background: var(--glass); border: 1px solid var(--glass-border);
+      color: rgba(255,255,255,0.5); font-size: 0.85rem; font-weight: 700;
+      white-space: nowrap; cursor: pointer; transition: all 0.4s;
+      backdrop-filter: blur(10px);
+    }
+    .sub-tab.active {
+      background: var(--theme); color: #000; border-color: var(--theme);
+      box-shadow: 0 5px 15px var(--gold-glow);
+    }
+
     #menuProducts { padding-bottom: 12rem; }
   </style>
 </head>
@@ -273,6 +291,7 @@
   </div>
 
   <div id="mnCatTabs" class="bi-tabs"></div>
+  <div id="mnSubTabs" class="sub-tabs"></div>
 
   <div class="mn-search-wrap" id="mnSearchWrap">
     <input type="text" id="mnSearch" class="mn-search" placeholder="🔍 Rechercher..." oninput="handleSearch()">
@@ -420,6 +439,22 @@ async function initMenu() {
       return;
     }
 
+    // 2.1 Trial Check (14 days)
+    const created = new Date(buvette.createdAt || Date.now());
+    const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 14 && !buvette.isPremium) {
+      const ldr = document.getElementById('loader');
+      if (ldr) { ldr.style.opacity = '0'; setTimeout(() => ldr.style.display = 'none', 500); }
+      const ep = document.getElementById('errPage');
+      ep.style.display = 'block';
+      ep.innerHTML = `
+        <div style="font-size:3rem;margin-bottom:1rem;">⏳</div>
+        <div style="font-family:var(--font-d);font-size:1.3rem;font-weight:700;margin-bottom:.5rem;">Menu temporairement indisponible</div>
+        <p style="color:var(--text-secondary);font-size:.9rem;">L'accès à ce menu a expiré. Veuillez contacter l'établissement pour plus d'informations.</p>
+      `;
+      return;
+    }
+
   // 3. Sync products from Firebase
   await PRODUCTS.syncFromFirebase(BID);
   await ORDERS.syncFromFirebase(BID);
@@ -538,6 +573,7 @@ function renderSkeletons() {
 }
 
 let currentGroup = 'drinks';
+let currentSubGroup = 'all';
 let searchQuery  = '';
 let specialTargetGroup = 'drinks';
 
@@ -573,8 +609,17 @@ function setSpecialType(gid) {
 
 function switchGroup(gid) {
   currentGroup = gid;
+  currentSubGroup = 'all'; // Reset sub-filter when switching main tab
   document.querySelectorAll('.bi-tab').forEach(t => t.classList.remove('active'));
   const tab = document.getElementById(`tab-${gid}`);
+  if (tab) tab.classList.add('active');
+  buildMenu(); // Rebuild sub-tabs too
+}
+
+function switchSubGroup(sid) {
+  currentSubGroup = sid;
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById(`sub-${sid}`);
   if (tab) tab.classList.add('active');
   renderCurrentView();
 }
@@ -594,8 +639,9 @@ function renderCurrentView() {
   
   let prods = allProds.filter(p => {
     const isInCategory = (currentGroup === 'drinks') ? drinkIds.includes(p.category) : foodIds.includes(p.category);
+    const matchesSub = (currentSubGroup === 'all') || (p.category === currentSubGroup);
     const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery) || (p.description||'').toLowerCase().includes(searchQuery);
-    return isInCategory && matchesSearch;
+    return isInCategory && matchesSub && matchesSearch;
   });
 
   container.innerHTML = `<div class="client-grid">` + (prods.length 
@@ -629,24 +675,39 @@ function buildMenu() {
   const availableProds = PRODUCTS.available(BID);
   
   const groups = {
-    drinks: { label: 'Boissons', emoji: '🍹', ids: ['alcohol','soft','hot'] },
-    food:   { label: 'Nourriture', emoji: '🍔', ids: ['food','dessert','other'] }
+    drinks: { label: 'Boissons', emoji: '🍹' },
+    food:   { label: 'Nourriture', emoji: '🍔' }
   };
 
-  /* Tabs */
+  const subGroups = {
+    drinks: [
+      { id: 'all', label: 'Tout' },
+      { id: 'alcohol', label: 'Bières/Alcool' },
+      { id: 'soft', label: 'Softs/Jus' },
+      { id: 'hot', label: 'Chauds' }
+    ],
+    food: [
+      { id: 'all', label: 'Tout' },
+      { id: 'food', label: 'Plats' },
+      { id: 'dessert', label: 'Desserts' },
+      { id: 'other', label: 'Autres' }
+    ]
+  };
+
+  /* Main Tabs */
   const tabs = document.getElementById('mnCatTabs');
-  tabs.innerHTML = Object.entries(groups).map(([gid, g], i) => `
+  tabs.innerHTML = Object.entries(groups).map(([gid, g]) => `
     <div class="bi-tab ${gid===currentGroup?'active':''}" id="tab-${gid}" onclick="switchGroup('${gid}')">
       <span class="tab-icon">${g.emoji}</span>
       <span class="tab-label">${g.label}</span>
     </div>
   `).join('');
 
-  /* Sections */
-  const container = document.getElementById('menuProducts');
-  container.innerHTML = Object.entries(groups).map(([gid, g]) => `
-    <div class="cat-section ${gid===currentGroup?'active':''}" id="sec-${gid}">
-      <div class="client-grid"></div>
+  /* Sub Tabs */
+  const subTabs = document.getElementById('mnSubTabs');
+  subTabs.innerHTML = subGroups[currentGroup].map(s => `
+    <div class="sub-tab ${s.id===currentSubGroup?'active':''}" id="sub-${s.id}" onclick="switchSubGroup('${s.id}')">
+      ${s.label}
     </div>
   `).join('');
 
@@ -859,7 +920,7 @@ function showStatus(order) {
 function renderStatus(order) {
   const map = {
     pending:   { icon:'⏳', cls:'status-pending',   title:'Commande reçue !',      sub:'Votre commande est en attente de confirmation.' },
-    preparing: { icon:'👨‍🍳', cls:'status-preparing', title:'En préparation !',      sub:'Le barman prépare votre commande. Merci de patienter.' },
+    preparing: { icon:'👨‍🍳', cls:'status-preparing', title:'En cours de service !',      sub:'Le serveur exécute votre commande. Elle arrive !' },
     paid:      { icon:'✅', cls:'status-paid',       title:'Commande payée ! 🎉',   sub:'Votre paiement a été confirmé. Vous pouvez télécharger votre ticket.' },
   };
   const s = map[order.status] || map.pending;

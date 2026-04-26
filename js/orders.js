@@ -60,6 +60,24 @@ const ORDERS = {
     return list[i];
   },
 
+  /* ── Archive all paid orders (Day Close) ── */
+  async archivePaid(bid) {
+    const list = this.getAll(bid);
+    let count = 0;
+    list.forEach(o => {
+      if (o.status === 'paid' && !o.archived) {
+        o.archived = true;
+        o.archivedAt = new Date().toISOString();
+        count++;
+      }
+    });
+    if (count > 0) {
+      this._saveLocal(bid, list);
+      await FBSYNC.push(this._key(bid), list);
+    }
+    return count;
+  },
+
   async updateItemPrice(bid, oid, itemIdx, newPrice) {
     const list = this.getAll(bid);
     const i = list.findIndex(o => o.id === oid);
@@ -76,16 +94,10 @@ const ORDERS = {
     return this.getAll(bid).find(o => o.id === oid) || null;
   },
 
-  async archivePaid(bid) {
-    const list = this.getAll(bid).filter(o => o.status !== 'paid');
-    this._saveLocal(bid, list);
-    await FBSYNC.push(this._key(bid), list);
-  },
-
   /* Get orders from today */
   today(bid) {
     const todayStr = new Date().toDateString();
-    return this.getAll(bid).filter(o => new Date(o.createdAt).toDateString() === todayStr);
+    return this.getAll(bid).filter(o => !o.archived && new Date(o.createdAt).toDateString() === todayStr);
   },
 
   /* ── Calculate stats for today ── */

@@ -100,7 +100,7 @@
     <div class="section" id="sec-orders">
       <div class="main-hdr">
         <span class="main-title">📋 Commandes</span>
-        <button class="btn btn-secondary btn-sm" onclick="clearPaidOrders()" style="font-size:.78rem;">Effacer les payées</button>
+        <button class="btn btn-primary btn-sm" onclick="closeDay()" style="font-size:.78rem; background:var(--gold); color:#000;">💰 Clôturer la journée</button>
       </div>
       <div class="main-body">
         <div class="orders-cols">
@@ -200,6 +200,13 @@
               <span style="font-size:.65rem;font-weight:700;color:#1a1a1a;">MENU QR CODE</span>
             </div>
           </div>
+        <div class="settings-section">
+          <div class="settings-title">👨‍🍳 Accès Serveurs</div>
+          <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:.75rem;">Définissez un mot de passe spécifique pour vos serveurs. Ils pourront voir les commandes sans accéder à vos réglages ou statistiques.</p>
+          <div class="form-group" style="max-width:300px;">
+            <label class="form-label">Mot de passe serveur</label>
+            <input id="s-waiter-pw" class="form-input" type="text" placeholder="Ex: serveur123">
+          </div>
         </div>
 
         <div class="settings-section">
@@ -253,11 +260,6 @@
             <div class="form-group">
               <label class="form-label">Couleur thème client</label>
               <div id="s-colors" class="color-picker"></div>
-            </div>
-            <div class="form-group" style="margin-top: .5rem;">
-              <label class="form-label">🔑 Mot de passe Serveur</label>
-              <input id="s-waiter-pwd" class="form-input" type="text" placeholder="Ex: serveur123">
-              <p style="font-size:.75rem; color:var(--text-muted); margin-top:.3rem;">S'ils se connectent avec ce mot de passe, ils n'auront accès qu'aux commandes en cours.</p>
             </div>
           </div>
           <button class="btn btn-primary" style="margin-top:1.25rem;" onclick="saveSettings()">💾 Enregistrer</button>
@@ -440,6 +442,23 @@
   </div>
 </div>
 
+<!-- ══ MODAL: Trial Expired ══ -->
+<div class="modal-overlay" id="expiryModal" style="z-index:9999;">
+  <div class="modal" style="max-width:450px;text-align:center;padding:4rem 2.5rem;border:2px solid var(--gold);">
+    <div style="font-size:4rem;margin-bottom:1.5rem;">⏳</div>
+    <div class="modal-title" style="margin-bottom:1rem;font-size:1.8rem;">Période d'essai terminée</div>
+    <p style="color:var(--text-secondary);font-size:1rem;line-height:1.6;margin-bottom:2rem;">
+      Votre essai gratuit de 14 jours est arrivé à son terme.<br>
+      Pour continuer à utiliser <b>Apeiron Buvette</b> et gérer vos ventes, veuillez activer votre compte premium.
+    </p>
+    <div style="background:rgba(240,165,0,0.1);padding:1.25rem;border-radius:var(--r-md);border:1px dashed var(--gold);margin-bottom:2rem;">
+      <div style="font-weight:800;color:var(--gold);margin-bottom:.2rem;">Contactez l'administration</div>
+      <div style="font-size:.9rem;opacity:0.8;">WhatsApp : +229 XX XX XX XX</div>
+    </div>
+    <button class="btn btn-ghost" onclick="AUTH.logout()">Déconnexion 🚪</button>
+  </div>
+</div>
+
 <div class="toast-box" id="toastBox"></div>
 
 <!-- Firebase SDK -->
@@ -465,6 +484,7 @@ let galCat      = 'all';
 let foodGalCat  = 'all';
 let foodPhotoData = null;
 let sThemeColor = '#f0a500';
+let lastPendingCount = 0;
 
 async function initDashboard() {
   // Show loading state
@@ -488,6 +508,14 @@ async function initDashboard() {
     await PRODUCTS.syncFromFirebase(BID);
     await ORDERS.syncFromFirebase(BID);
 
+    // 4. Trial Check (14 days)
+    const created = new Date(buvette.createdAt || Date.now());
+    const daysDiff = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysDiff > 14 && !buvette.isPremium) {
+      openModal('expiryModal');
+      return; // Stop init
+    }
+
   } catch(e) {
     console.error('Init error:', e);
   } finally {
@@ -503,9 +531,15 @@ async function initDashboard() {
   // 5. Set up real-time listeners so UI updates automatically
   PRODUCTS.listen(BID, () => { buildCatTabs(); renderProducts(); });
     ORDERS.listen(BID, (all) => { 
+      const pendingCount = all.filter(o => o.status === 'pending' && !o.archived).length;
+      if (pendingCount > lastPendingCount) {
+        const audio = document.getElementById('ding');
+        if (audio) audio.play().catch(e => console.log("Audio block:", e));
+      }
+      lastPendingCount = pendingCount;
       renderOrders(); 
-      const pending = all.filter(o => o.status === 'pending').length;
-      updateBadge(pending); 
+      renderStats(); 
+      if (document.getElementById('sec-register').classList.contains('active')) renderRegister();
     });
 }
 
@@ -850,7 +884,7 @@ function orderCard(o) {
   const statusBadge = o.status==='pending'
     ? '<span class="badge badge-pending">⏳ En attente</span>'
     : o.status==='preparing'
-      ? '<span class="badge badge-preparing">👨‍🍳 En préparation</span>'
+      ? '<span class="badge badge-preparing">👨‍🍳 En cours de service</span>'
       : '<span class="badge badge-paid">✅ Payée</span>';
 
   const actions = o.status !== 'paid' ? `
@@ -910,10 +944,22 @@ function downloadTicket(oid) {
   toast('Ticket téléchargé 🎫','success');
 }
 
-function clearPaidOrders() {
-  ORDERS.archivePaid(BID);
-  renderOrders();
-  toast('Commandes archivées vers le Registre 📖','info');
+function closeDay() {
+  const all = ORDERS.getAll(BID).filter(o => o.status === 'paid' && !o.archived);
+  if (all.length === 0) {
+    toast('Aucune commande payée à clôturer.', 'warning');
+    return;
+  }
+  const total = all.reduce((s, o) => s + o.total, 0);
+  const confirmed = window.confirm(`Voulez-vous clôturer la journée ?\n\nTotal encaissé : ${fmt(total)}\nNombre de commandes : ${all.length}\n\nCes commandes seront archivées dans le Registre.`);
+  
+  if (confirmed) {
+    ORDERS.archivePaid(BID).then(() => {
+      renderOrders();
+      renderStats();
+      toast('Journée clôturée et archivée ! 📖', 'success');
+    });
+  }
 }
 
 function updateBadge(n) {
@@ -1015,9 +1061,9 @@ function loadSettings() {
   document.getElementById('s-address').value  = b.address || '';
   document.getElementById('s-currency').value = b.currency|| 'FCFA';
   document.getElementById('s-phone').value    = b.phone   || '';
-  document.getElementById('s-open').value     = b.openTime || '08:00';
-  document.getElementById('s-close').value    = b.closeTime|| '23:00';
-  document.getElementById('s-waiter-pwd').value = b.waiterPassword || '';
+  document.getElementById('s-open').value    = buvette.openTime || '08:00';
+  document.getElementById('s-close').value   = buvette.closeTime || '23:00';
+  document.getElementById('s-waiter-pw').value = buvette.waiterPassword ? decodeURIComponent(escape(atob(buvette.waiterPassword))) : '';
   sThemeColor = b.themeColor || '#f0a500';
 
   /* Logo preview */
@@ -1055,7 +1101,7 @@ function saveSettings() {
     phone:     document.getElementById('s-phone').value.trim(),
     openTime:  document.getElementById('s-open').value,
     closeTime: document.getElementById('s-close').value,
-    waiterPassword: document.getElementById('s-waiter-pwd').value.trim(),
+    waiterPassword: document.getElementById('s-waiter-pw').value ? btoa(unescape(encodeURIComponent(document.getElementById('s-waiter-pw').value))) : null,
     themeColor: sThemeColor,
   });
   toast('Paramètres enregistrés ✅','success');
@@ -1100,6 +1146,7 @@ document.getElementById('p-avail').onchange = function() {
 
 /* ══ REAL-TIME ORDER POLLING ══ */
 let lastOrderCount = 0;
+let lastPendingCount = 0;
 function pollOrders() {
   const active = ORDERS.getAll(BID).filter(o=>o.status!=='paid');
   const pending = active.filter(o=>o.status==='pending').length;
@@ -1167,5 +1214,6 @@ function renderRegister() {
 // Keep order badge and list fresh every 15 seconds (as a safety net alongside the real-time listener).
 setInterval(pollOrders, 15000);
 </script>
+<audio id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 </body>
 </html>
