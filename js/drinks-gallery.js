@@ -60,6 +60,7 @@ const DRINKS = {
     { id:'djama',       name:'Djama',       cat:'alcohol', lines:['DJAMA'],          p:'#2E7D32', s:'#1B5E20', rim:'#F44336', t:'#F44336' },
     { id:'chill',       name:'Chill',       cat:'alcohol', lines:['CHILL'],          p:'#1565C0', s:'#0D47A1', rim:'#E0E0E0', t:'#E0E0E0' },
     { id:'tequila',     name:'Tequila',     cat:'alcohol', lines:['TEQUI','LA'],     p:'#FFC107', s:'#FFA000', rim:'#212121', t:'#212121' },
+    { id:'racine',      name:'Racine',      cat:'alcohol', lines:['RACINE'],         p:'#5C3317', s:'#3B1F0D', rim:'#D4A017', t:'#D4A017' },
     /* ── CHAUDS ── */
     { id:'nescafe',     name:'Nescafé',     cat:'hot',     lines:['NESCA','FÉ'],     p:'#C52126', s:'#8B1519', rim:'#D4A017', t:'#fff' },
     { id:'cafe',        name:'Café',        cat:'hot',     lines:['CAFÉ'],           p:'#3D1C02', s:'#200E01', rim:'#D4A017', t:'#D4A017' },
