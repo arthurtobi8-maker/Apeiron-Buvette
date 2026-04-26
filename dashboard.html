@@ -254,6 +254,11 @@
               <label class="form-label">Couleur thème client</label>
               <div id="s-colors" class="color-picker"></div>
             </div>
+            <div class="form-group" style="margin-top: .5rem;">
+              <label class="form-label">🔑 Mot de passe Serveur</label>
+              <input id="s-waiter-pwd" class="form-input" type="text" placeholder="Ex: serveur123">
+              <p style="font-size:.75rem; color:var(--text-muted); margin-top:.3rem;">S'ils se connectent avec ce mot de passe, ils n'auront accès qu'aux commandes en cours.</p>
+            </div>
           </div>
           <button class="btn btn-primary" style="margin-top:1.25rem;" onclick="saveSettings()">💾 Enregistrer</button>
         </div>
@@ -1012,6 +1017,7 @@ function loadSettings() {
   document.getElementById('s-phone').value    = b.phone   || '';
   document.getElementById('s-open').value     = b.openTime || '08:00';
   document.getElementById('s-close').value    = b.closeTime|| '23:00';
+  document.getElementById('s-waiter-pwd').value = b.waiterPassword || '';
   sThemeColor = b.themeColor || '#f0a500';
 
   /* Logo preview */
@@ -1049,6 +1055,7 @@ function saveSettings() {
     phone:     document.getElementById('s-phone').value.trim(),
     openTime:  document.getElementById('s-open').value,
     closeTime: document.getElementById('s-close').value,
+    waiterPassword: document.getElementById('s-waiter-pwd').value.trim(),
     themeColor: sThemeColor,
   });
   toast('Paramètres enregistrés ✅','success');

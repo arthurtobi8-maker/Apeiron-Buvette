@@ -76,15 +76,25 @@ const AUTH = {
     const b = list.find(x => x.email === email);
     if (!b) throw new Error('Email introuvable.');
     const stored = decodeURIComponent(escape(atob(b.password)));
-    if (stored !== password) throw new Error('Mot de passe incorrect.');
-    this.setSession(b.id);
-    return b;
+    
+    let role = 'admin';
+    if (stored !== password) {
+      if (b.waiterPassword && b.waiterPassword === password) {
+        role = 'waiter';
+      } else {
+        throw new Error('Mot de passe incorrect.');
+      }
+    }
+    
+    this.setSession(b.id, false, role);
+    return { ...b, role };
   },
 
   /* ── Session management (local only — per device) ── */
-  setSession(buvetteId, remember = false) {
+  setSession(buvetteId, remember = false, role = 'admin') {
     localStorage.setItem(this.SESSION_KEY, JSON.stringify({
       buvetteId,
+      role,
       expiry: Date.now() + (remember ? 30 : 1) * 24 * 60 * 60 * 1000,
     }));
   },
@@ -99,7 +109,9 @@ const AUTH = {
   getCurrentBuvette() {
     const s = this.getSession();
     if (!s) return null;
-    return this.getBuvettes().find(b => b.id === s.buvetteId) || null;
+    const b = this.getBuvettes().find(b => b.id === s.buvetteId);
+    if (!b) return null;
+    return { ...b, role: s.role || 'admin' };
   },
 
   getBuvetteById(id) {
