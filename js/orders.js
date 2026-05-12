@@ -53,6 +53,12 @@ const ORDERS = {
     const list = this.getAll(bid);
     const i = list.findIndex(o => o.id === oid);
     if (i === -1) return null;
+    
+    // Deduct stock when moving from pending to preparing
+    if (list[i].status === 'pending' && status === 'preparing') {
+      await this.deductStock(bid, list[i].items);
+    }
+
     list[i].status = status;
     if (status === 'paid') list[i].paidAt = new Date().toISOString();
     this._saveLocal(bid, list);

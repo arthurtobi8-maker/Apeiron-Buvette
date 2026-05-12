@@ -400,9 +400,10 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="js/firebase.js"></script>
 
-<script src="js/auth.js"></script>
+<script src="js/auth_v2.js"></script>
 <script src="js/drinks-gallery.js"></script>
 <script src="js/products.js"></script>
 <script src="js/orders.js"></script>
@@ -430,7 +431,7 @@ async function initMenu() {
       if (logged) BID = logged.id;
     }
 
-    buvette = BID ? AUTH.getBuvetteById(BID) : null;
+    buvette = BID ? await AUTH.getBuvetteById(BID) : null;
 
     if (!buvette) {
       const ldr = document.getElementById('loader');

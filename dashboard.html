@@ -464,9 +464,10 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="js/firebase.js"></script>
 
-<script src="js/auth.js"></script>
+<script src="js/auth_v2.js"></script>
 <script src="js/drinks-gallery.js"></script>
 <script src="js/food-gallery.js"></script>
 <script src="js/products.js"></script>
@@ -496,7 +497,7 @@ async function initDashboard() {
     await AUTH.syncFromFirebase();
 
     // 2. Get current session
-    buvette = AUTH.requireAuth();
+    buvette = await AUTH.requireAuth();
     if (!buvette) return;
     BID = buvette.id;
 
@@ -1092,7 +1093,7 @@ function setSColor(c, el) {
 }
 
 function saveSettings() {
-  AUTH.updateBuvette(BID, {
+  const updates = {
     name:      document.getElementById('s-name').value.trim()  || buvette.name,
     slogan:    document.getElementById('s-slogan').value.trim(),
     city:      document.getElementById('s-city').value.trim(),
@@ -1103,6 +1104,11 @@ function saveSettings() {
     closeTime: document.getElementById('s-close').value,
     waiterPassword: document.getElementById('s-waiter-pw').value ? btoa(unescape(encodeURIComponent(document.getElementById('s-waiter-pw').value))) : null,
     themeColor: sThemeColor,
+  };
+  AUTH.updateBuvette(BID, updates).then(updated => {
+    buvette = updated;
+    document.getElementById('sbName').textContent = buvette.name;
+    document.title = `${buvette.name} — Dashboard`;
   });
   toast('Paramètres enregistrés ✅','success');
 }
@@ -1146,7 +1152,6 @@ document.getElementById('p-avail').onchange = function() {
 
 /* ══ REAL-TIME ORDER POLLING ══ */
 let lastOrderCount = 0;
-let lastPendingCount = 0;
 function pollOrders() {
   const active = ORDERS.getAll(BID).filter(o=>o.status!=='paid');
   const pending = active.filter(o=>o.status==='pending').length;
