@@ -690,9 +690,13 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="sidebar-ft">
-          <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start', gap: '.6rem', color: 'var(--error)' }} onClick={handleLogout}>
+          <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start', gap: '.6rem', color: 'var(--error)', marginBottom: '.75rem' }} onClick={handleLogout}>
             <span>🚪</span> Déconnexion
           </button>
+          <div style={{ textAlign: 'center', fontSize: '.68rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '.75rem', lineHeight: '1.4' }}>
+            Apeiron Studio Ecosystem<br />
+            Founder: <strong>A. T. TCHABI</strong>
+          </div>
         </div>
       </nav>
 

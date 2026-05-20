@@ -268,9 +268,15 @@ export default function Register() {
             </div>
           </div>
 
-          <div style={{ marginTop: '2rem' }}>
-            <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.5rem' }}>Déjà un compte ?</p>
-            <Link to="/login" className="btn btn-ghost btn-sm">Se connecter →</Link>
+          <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div>
+              <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.5rem' }}>Déjà un compte ?</p>
+              <Link to="/login" className="btn btn-ghost btn-sm">Se connecter →</Link>
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem', fontSize: '.72rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+              Une création de <strong style={{ color: 'var(--gold)' }}>Apeiron Studio</strong><br />
+              Conçu par <strong style={{ color: '#fff' }}>Arthur Tobi TCHABI</strong>
+            </div>
           </div>
         </aside>
 

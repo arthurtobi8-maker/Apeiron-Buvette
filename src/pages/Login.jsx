@@ -138,6 +138,11 @@ export default function Login() {
           <p style={{ fontSize: '.83rem', color: 'var(--text-muted)', marginBottom: '.5rem' }}>Pas encore de compte ?</p>
           <Link to="/register" className="btn btn-secondary btn-sm">Créer ma buvette →</Link>
         </div>
+        
+        <div style={{ textAlign: 'center', marginTop: '2rem', fontSize: '.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+          Une création de <strong style={{ color: 'var(--theme)' }}>Apeiron Studio</strong><br />
+          Conçu par <strong style={{ color: '#fff' }}>Arthur Tobi TCHABI</strong>
+        </div>
       </div>
     </div>
   );

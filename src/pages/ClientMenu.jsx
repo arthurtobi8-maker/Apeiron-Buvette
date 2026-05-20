@@ -613,6 +613,12 @@ export default function ClientMenu() {
               Voir →
             </button>
           </div>
+          
+          {/* Footer branding */}
+          <div style={{ textAlign: 'center', marginTop: '3rem', paddingBottom: '2rem', fontSize: '.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+            Propulsé par <strong style={{ color: 'var(--theme)' }}>Apeiron Studio</strong><br />
+            Conçu par <strong style={{ color: '#fff' }}>Arthur Tobi TCHABI</strong>
+          </div>
         </div>
       )}
 
