@@ -3,13 +3,13 @@ import 'firebase/compat/database';
 import 'firebase/compat/auth';
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyBP40Z-Yb5uumF2LK8RQqwq2QWslg_Qbz0",
-  authDomain: "apeiron-buvette.firebaseapp.com",
-  databaseURL: "https://apeiron-buvette-default-rtdb.firebaseio.com/",
-  projectId: "apeiron-buvette",
-  storageBucket: "apeiron-buvette.firebasestorage.app",
-  messagingSenderId: "720825889630",
-  appId: "1:720825889630:web:3076a790493a9799d915cf"
+  apiKey: "AIzaSyCRlwih46ojgtWgVx0zgXqLLTww3JtZiuA",
+  authDomain: "apeiron-buvette-6073c.firebaseapp.com",
+  databaseURL: "https://apeiron-buvette-6073c-default-rtdb.firebaseio.com/",
+  projectId: "apeiron-buvette-6073c",
+  storageBucket: "apeiron-buvette-6073c.firebasestorage.app",
+  messagingSenderId: "575372000462",
+  appId: "1:575372000462:web:8973a18e8e6b8870dd649f"
 };
 
 if (!firebase.apps.length) {
