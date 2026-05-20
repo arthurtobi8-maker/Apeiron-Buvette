@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Apeiron Buvette</string>
+    <string name="title_activity_main">Apeiron Buvette</string>
+    <string name="package_name">com.apeiron.buvette</string>
+    <string name="custom_url_scheme">com.apeiron.buvette</string>
+</resources>

@@ -14,11 +14,12 @@
   --bg-glass-h: rgba(255,255,255,0.07);
 
   --gold:        #f0a500;
-  --gold-light:  #f5c842;
+  --gold-light:  #ffd700;
+  --gold-vibrant:#ff8c00;
   --gold-glow:   rgba(240,165,0,0.22);
-  --gold-dark:   #c47f00;
-  --orange:      #e85d04;
-  --orange-light:#ff7f2a;
+  --gold-dark:   #b8860b;
+  --orange:      #ff4500;
+  --orange-light:#ff7f50;
 
   --text-primary:   #f0f0ec;
   --text-secondary: #9090a8;
@@ -36,7 +37,7 @@
   --shadow-sm:   0 2px 8px rgba(0,0,0,0.35);
   --shadow-md:   0 4px 24px rgba(0,0,0,0.45);
   --shadow-lg:   0 8px 48px rgba(0,0,0,0.6);
-  --shadow-gold: 0 0 40px rgba(240,165,0,0.18);
+  --shadow-gold: 0 10px 40px rgba(240,165,0,0.18);
   --shadow-btn:  0 4px 15px rgba(240,165,0,0.35);
 
   --font-d: 'Outfit', sans-serif;
@@ -75,8 +76,9 @@ ul,ol { list-style:none; }
 /* ── TYPOGRAPHY ─────────────────────────────────────────────── */
 h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700; }
 .gradient-text {
-  background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--orange));
+  background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-vibrant));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip:text;
+  filter: drop-shadow(0 0 10px rgba(240,165,0,0.3));
 }
 .gradient-bg {
   background:
@@ -102,6 +104,11 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: 1.5rem;
+  transition: transform 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.card:hover {
+  border-color: var(--border-gold);
+  box-shadow: var(--shadow-md), var(--shadow-gold);
 }
 
 /* ── BUTTONS ─────────────────────────────────────────────────── */
@@ -557,9 +564,38 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
 @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:0.6} }
 @keyframes spin    { to{transform:rotate(360deg)} }
 @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+@keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+.anim-float { animation: float 6s ease-in-out infinite; }
 
 .anim-fade { animation:fadeIn 0.4s var(--ease) forwards; }
 .anim-up   { animation:slideUp 0.4s var(--ease) forwards; }
+
+/* ── PREMIUM BORDER ── */
+.border-premium {
+  position: relative;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  padding: 1px;
+}
+.border-premium::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: conic-gradient(transparent, var(--gold), transparent 30%);
+  animation: borderRotate 4s linear infinite;
+}
+.border-premium-inner {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: calc(var(--r-lg) - 1px);
+  z-index: 1;
+  height: 100%;
+}
+@keyframes borderRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
 @media(max-width:900px) {

@@ -1,21 +1,19 @@
-# Netlify configuration — Apeiron Buvette
-# Drop the entire "Apeiron Buvette" folder on https://app.netlify.com/drop
+# Netlify configuration — Apeiron Buvette (React + Vite)
+# Option A : Glissez-déposez le dossier "dist" sur https://app.netlify.com/drop
+# Option B : Liez votre dépôt Git avec les paramètres ci-dessous
 
 [build]
-  publish = "."
-# Cache static assets aggressively
+  command = "npm run build"
+  publish = "dist"
+
+# Cache static assets from Vite aggressively
 [[headers]]
-  for = "/css/*"
+  for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/js/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.html"
+  for = "/index.html"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
