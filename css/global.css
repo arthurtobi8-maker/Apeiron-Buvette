@@ -597,11 +597,15 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
   to { transform: rotate(360deg); }
 }
 
+.mobile-topbar { display: none; }
+
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
 @media(max-width:900px) {
   .reg-hero { display:none; }
 }
 @media(max-width:768px) {
+  .app-layout { flex-direction: column; }
+  .mobile-topbar { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); background: var(--bg-card); z-index: 100; }
   .sidebar {
     position:fixed; left:-260px; top:0; bottom:0;
     z-index:500; transition:left var(--t-base) var(--ease);
