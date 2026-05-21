@@ -1980,7 +1980,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <audio ref={audioRef} id="ding" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+      <audio ref={audioRef} id="ding" src="https://actions.google.com/sounds/v1/alarms/din_ding.ogg"></audio>
 
       {/* Toast Box */}
       <div className="toast-box">

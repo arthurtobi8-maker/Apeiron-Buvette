@@ -503,9 +503,9 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--font-d); line-height:1.2; font-weight:700;
 .mn-card.in-cart { border-color:var(--border-gold); background:rgba(240,165,0,0.06); }
 .mn-qty { position:absolute; top:-8px; right:-8px; background:var(--orange); color:#fff; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; box-shadow:var(--shadow-sm); opacity:0; transform:scale(0.9); transition:all 0.2s ease; }
 .mn-qty.show { opacity:1; transform:scale(1); }
-.mn-cap { width:60px; height:60px; }
-.mn-photo { width:60px; height:60px; border-radius:var(--r-sm); object-fit:cover; }
-.mn-pname { font-size:0.83rem; font-weight:600; line-height:1.3; font-family:var(--font-d); }
+.mn-cap { width:80px; height:80px; }
+.mn-photo { width:80px; height:80px; border-radius:var(--r-sm); object-fit:cover; }
+.mn-pname { font-size:0.83rem; font-weight:600; line-height:1.3; font-family:var(--font-d); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
 .mn-pprice { font-family:var(--font-d); font-size:0.9rem; font-weight:800; }
 .mn-pdesc { font-size:0.78rem; color:var(--text-secondary); line-height:1.4; }
 .mn-search-wrap { padding:1rem 1.5rem; display:flex; justify-content:center; }

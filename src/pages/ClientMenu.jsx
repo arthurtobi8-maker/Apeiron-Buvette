@@ -155,11 +155,11 @@ export default function ClientMenu() {
         if (fresh.status !== activeOrder.status) {
           // Play sound
           if (fresh.status === 'preparing') {
-            const snd = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            const snd = new Audio('https://actions.google.com/sounds/v1/water/droplet_reverb.ogg');
             snd.volume = 0.8;
             snd.play().catch(() => {});
           } else if (fresh.status === 'paid') {
-            const snd = new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3');
+            const snd = new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg');
             snd.volume = 0.8;
             snd.play().catch(() => {});
           }
@@ -586,12 +586,12 @@ export default function ClientMenu() {
                       <div className={`mn-qty ${inCartQty > 0 ? 'show' : ''}`}>{inCartQty}</div>
                       {p.type === 'drink' && p.brandId ? (
                         <div className="mn-cap">
-                          <div dangerouslySetInnerHTML={{ __html: DRINKS.svg(DRINKS.byId(p.brandId) || { id: '', lines: ['?'], p: '#555', s: '#333', rim: '#888', t: '#fff' }, 62) }} />
+                          <div dangerouslySetInnerHTML={{ __html: DRINKS.svg(DRINKS.byId(p.brandId) || { id: '', lines: ['?'], p: '#555', s: '#333', rim: '#888', t: '#fff' }, 80) }} />
                         </div>
                       ) : p.imageData ? (
                         <img className="mn-photo" src={p.imageData} alt={p.name} />
                       ) : (
-                        <div style={{ width: '62px', height: '62px', borderRadius: 'var(--r-sm)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', marginBottom: '1.5rem' }}>
+                        <div style={{ width: '80px', height: '80px', borderRadius: 'var(--r-sm)', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', marginBottom: '1.5rem' }}>
                           {p.category === 'food' ? '🍔' : p.category === 'dessert' ? '🍰' : '📦'}
                         </div>
                       )}
