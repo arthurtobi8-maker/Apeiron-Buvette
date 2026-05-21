@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AUTH } from '../services/auth';
 import { PRODUCTS } from '../services/products';
@@ -12,32 +12,29 @@ export default function ClientMenu() {
   const [bid, setBid] = useState(searchParams.get('buvette'));
   const [buvette, setBuvette] = useState(null);
   
+  const [products, setProducts] = useState([]);
+  const [specials, setSpecials] = useState([]);
+  const [cart, setCart] = useState({});
+  const [toasts, setToasts] = useState([]);
+
   // Navigation & UI Modes
   const [viewMode, setViewMode] = useState('loading'); // loading | error | menu | status
   const [errorMsg, setErrorMsg] = useState({ title: '', desc: '' });
-
-  // Menu State
-  const [products, setProducts] = useState([]);
-  const [specials, setSpecials] = useState([]); // Custom request items
-  const [currentGroup, setCurrentGroup] = useState('drinks'); // drinks | food
+  const [currentGroup, setCurrentGroup] = useState('drinks');
   const [currentSubGroup, setCurrentSubGroup] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Cart State
-  const [cart, setCart] = useState({}); // pid -> qty
   const [showCartModal, setShowCartModal] = useState(false);
-  const [orderMode, setOrderMode] = useState('Sur Place'); // Sur Place | À emporter
+  const [showMomoModal, setShowMomoModal] = useState(false);
+  const [momoLoadingStep, setMomoLoadingStep] = useState('input');
+
+  // Order / Cart metadata
   const [clientName, setClientName] = useState('');
   const [clientTable, setClientTable] = useState('');
   const [orderError, setOrderError] = useState('');
   const [sendingOrder, setSendingOrder] = useState(false);
-
-  // Online Payment Simulation State
-  const [payMode, setPayMode] = useState('cash'); // cash | online
-  const [momoOperator, setMomoOperator] = useState('MTN'); // MTN | Orange | Moov | Wave
+  const [payMode, setPayMode] = useState('cash');
+  const [momoOperator, setMomoOperator] = useState('MTN');
   const [momoPhone, setMomoPhone] = useState('');
-  const [showMomoModal, setShowMomoModal] = useState(false);
-  const [momoLoadingStep, setMomoLoadingStep] = useState('input'); // input | spinner | success
 
   // Special Request State
   const [showSpecialModal, setShowSpecialModal] = useState(false);
@@ -54,7 +51,6 @@ export default function ClientMenu() {
   const [hasDismissedReview, setHasDismissedReview] = useState(false);
 
   // Toasts
-  const [toasts, setToasts] = useState([]);
 
   const showToast = (msg, type = 'info') => {
     const id = Date.now() + Math.random();
@@ -67,7 +63,7 @@ export default function ClientMenu() {
   useEffect(() => {
     const loadBuvette = async () => {
       try {
-        await AUTH.syncFromFirebase();
+          await AUTH.syncFromFirebase(); // Sync from Firebase
 
         let currentBid = bid;
         if (!currentBid) {
@@ -340,7 +336,7 @@ export default function ClientMenu() {
     setSubmittingReview(true);
     try {
       await ORDERS.addReview(bid, activeOrder.id, rating, reviewText);
-      showToast("Merci pour votre avis ! ⭐", "success");
+          showToast("Merci pour votre avis ! ⭐", "success"); // Thank you for your review
     } catch (err) {
       showToast("Impossible d'envoyer l'avis.", "error");
     } finally {
@@ -416,6 +412,41 @@ export default function ClientMenu() {
     <div className="gradient-bg" style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
       {/* Dynamic Animated Mesh Gradients styling */}
       <style>{`
+        /* --- Global Scrollbar & Interaction fixes --- */
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+
+        button, .btn, .nav-item, .cat-tab, .mn-card, .bi-tab, .sub-tab {
+          cursor: pointer;
+          user-select: none;
+          transition: transform 0.1s var(--ease), opacity 0.2s var(--ease);
+          position: relative;
+        }
+
+        button:active, .btn:active, .mn-card:active, .bi-tab:active, .sub-tab:active {
+          transform: scale(0.96);
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+          transform: none !important;
+        }
+
+        /* Navigation horizontal scrolling */
+        .bi-tabs, .sub-tabs {
+          display: flex;
+          overflow-x: auto;
+          white-space: nowrap;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 5px;
+        }
+
         .mesh-bg {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;

@@ -6,13 +6,7 @@ export const PDF = {
     const doc = new jsPDF({ unit:'mm', format:[W, 110] }); // height auto-expanded
     let y = margin;
 
-    const text = (str, fontSize, align = 'left', style = 'normal', color = [235,235,228]) => {
-      doc.setFontSize(fontSize);
-      doc.setFont('helvetica', style);
-      doc.setTextColor(...color);
-      const xMap = { center: W/2, right: W-margin, left: margin };
-      doc.text(String(str), xMap[align] || margin, y, { align });
-    };
+    
 
     const dotLine = () => {
       doc.setDrawColor(70,70,84);

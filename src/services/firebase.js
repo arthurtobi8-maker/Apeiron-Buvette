@@ -62,7 +62,7 @@ export const FBSYNC = {
           const value = JSON.parse(snap.val().data);
           localStorage.setItem(key, JSON.stringify(value));
           callback(value);
-        } catch (e) { /* ignore parse errors */ }
+        } catch { /* ignore parse errors */ }
       }
     };
     ref.on('value', cb, err => {

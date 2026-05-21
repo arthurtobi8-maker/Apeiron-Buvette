@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AUTH } from '../services/auth';
 
@@ -19,6 +19,17 @@ export default function Register() {
   const [openDays, setOpenDays] = useState(new Set(['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']));
   const [themeColor, setThemeColor] = useState('#f0a500');
   const [logoData, setLogoData] = useState(null);
+  // Grouped State (Advice #2)
+  const [formData, setFormData] = useState({
+    name: '', type: '', slogan: '', city: '', address: '', phone: '',
+    currency: 'FCFA', openTime: '08:00', closeTime: '23:00',
+    openDays: new Set(['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']),
+    themeColor: '#f0a500', logoData: null,
+    fname: '', lname: '', email: '', ophone: '',
+    password: '', passwordConfirm: '',
+    motivation: '', ambitions: '', howFound: '',
+    cguChecked: false
+  });
 
   const [fname, setFname] = useState('');
   const [lname, setLname] = useState('');
@@ -37,6 +48,16 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [regError, setRegError] = useState('');
   const [pwStrength, setPwStrength] = useState(0);
+
+  // Generic update handler
+  const updateField = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    updateField(name, type === 'checkbox' ? checked : value);
+  };
 
   useEffect(() => {
     // Guest route guard
@@ -64,12 +85,14 @@ export default function Register() {
   const dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const toggleDay = (d) => {
     const next = new Set(openDays);
+    const next = new Set(formData.openDays);
     if (next.has(d)) {
       next.delete(d);
     } else {
       next.add(d);
     }
     setOpenDays(next);
+    updateField('openDays', next);
   };
 
   // Custom styling elements
@@ -86,6 +109,7 @@ export default function Register() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       setLogoData(evt.target.result);
+      updateField('logoData', evt.target.result);
     };
     reader.readAsDataURL(file);
   };
@@ -93,6 +117,7 @@ export default function Register() {
   // Check password strength
   const handlePasswordChange = (val) => {
     setPassword(val);
+    updateField('password', val);
     const score = [
       val.length >= 8,
       /[A-Z]/.test(val),
@@ -115,28 +140,34 @@ export default function Register() {
   const validate = (s) => {
     if (s === 1) {
       if (!name.trim()) {
+      if (!formData.name.trim()) {
         showToast('Le nom de la buvette est requis', 'error');
         return false;
       }
       if (!type) {
+      if (!formData.type) {
         showToast("Choisissez un type d'établissement", 'error');
         return false;
       }
     }
     if (s === 2) {
       if (!fname.trim() || !lname.trim()) {
+      if (!formData.fname.trim() || !formData.lname.trim()) {
         showToast('Prénom et nom requis', 'error');
         return false;
       }
       if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
         showToast('Email invalide', 'error');
         return false;
       }
       if (password.length < 8) {
+      if (formData.password.length < 8) {
         showToast('Mot de passe trop court (min. 8 car.)', 'error');
         return false;
       }
       if (password !== passwordConfirm) {
+      if (formData.password !== formData.passwordConfirm) {
         showToast('Les mots de passe ne correspondent pas', 'error');
         return false;
       }
@@ -154,10 +185,12 @@ export default function Register() {
     e.preventDefault();
     if (!validate(3)) return;
     if (!motivation.trim()) {
+    if (!formData.motivation.trim()) {
       showToast("Dites-nous pourquoi vous choisissez Apeiron", 'error');
       return;
     }
     if (!cguChecked) {
+    if (!formData.cguChecked) {
       showToast("Vous devez accepter les CGU pour continuer.", 'error');
       return;
     }
@@ -186,6 +219,25 @@ export default function Register() {
         motivation: motivation.trim(),
         ambitions: ambitions.trim(),
         howFound,
+        name: formData.name.trim(),
+        type: formData.type,
+        slogan: formData.slogan.trim(),
+        city: formData.city.trim(),
+        address: formData.address.trim(),
+        phone: formData.phone.trim(),
+        currency: formData.currency,
+        openTime: formData.openTime,
+        closeTime: formData.closeTime,
+        openDays: Array.from(formData.openDays),
+        logo: formData.logoData,
+        themeColor: formData.themeColor,
+        ownerName: `${formData.fname.trim()} ${formData.lname.trim()}`,
+        email: formData.email.trim(),
+        ownerPhone: formData.ophone.trim(),
+        password: formData.password,
+        motivation: formData.motivation.trim(),
+        ambitions: formData.ambitions.trim(),
+        howFound: formData.howFound,
       });
 
       AUTH.setSession(b.id, 'admin', true);
@@ -200,6 +252,34 @@ export default function Register() {
   return (
     <div className="gradient-bg" style={{ minHeight: '100vh' }}>
       <style>{`
+        /* --- Optimisation des interactions et Scrollbars --- */
+        
+        /* Rendre les barres de défilement invisibles sur tout le site */
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+
+        /* Effet de clic sur les boutons pour une sensation de "vrai" bouton */
+        button, .btn, .nav-item, .cat-tab, .mn-card, .day-btn, .c-swatch {
+          cursor: pointer;
+          user-select: none;
+          transition: transform 0.1s var(--ease), opacity 0.2s var(--ease);
+        }
+
+        button:active, .btn:active, .day-btn:active, .mn-card:active {
+          transform: scale(0.96);
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+          transform: none !important;
+        }
+
         .day-btn { padding:.4rem .85rem; border-radius:var(--r-full); border:1px solid var(--border); background:var(--bg-glass); color:var(--text-secondary); font-size:.82rem; font-weight:500; cursor:pointer; transition:all var(--t-fast) var(--ease); }
         .day-btn.on { background:linear-gradient(135deg,var(--gold),var(--orange)); color:#fff; border-color:transparent; }
         .feat-item { display:flex; gap:.75rem; align-items:center; padding:1rem; }
@@ -455,9 +535,12 @@ export default function Register() {
                           <div
                             key={c}
                             className={`c-swatch ${c === themeColor ? 'on' : ''}`}
+                            className={`c-swatch ${c === formData.themeColor ? 'on' : ''}`}
                             style={{ background: c }}
                             title={c}
+                            role="button"
                             onClick={() => setThemeColor(c)}
+                            onClick={() => updateField('themeColor', c)}
                           ></div>
                         ))}
                         <label style={{ cursor: 'pointer', position: 'relative' }}>
@@ -467,6 +550,8 @@ export default function Register() {
                             style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
                             value={themeColor}
                             onChange={(e) => setThemeColor(e.target.value)}
+                            value={formData.themeColor}
+                            onChange={(e) => updateField('themeColor', e.target.value)}
                           />
                         </label>
                       </div>

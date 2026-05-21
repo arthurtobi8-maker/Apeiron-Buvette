@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AUTH } from '../services/auth';
 import { PRODUCTS } from '../services/products';
@@ -11,23 +11,48 @@ import { THEME_PRESETS, getThemeConfig } from '../services/themes';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [buvette, setBuvette] = useState(null);
-  const [activeTab, setActiveTab] = useState('products'); // products | orders | stats | waiters | settings | register
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Lists
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-
-  // Toast notifications
   const [toasts, setToasts] = useState([]);
+
+  // Grouped UI State
+  const [ui, setUi] = useState({
+    activeTab: 'products',
+    sidebarOpen: false,
+    prodSearch: '',
+    currentCat: 'all',
+    showWaiterModal: false,
+    showProdModal: false,
+    showDelModal: false,
+    showGalModal: false,
+    showFoodGalModal: false,
+    loading: true
+  });
+
+  // Grouped Forms State
+  const [prodForm, setProdForm] = useState({
+    id: null,
+    type: 'drink',
+    name: '',
+    category: 'alcohol',
+    price: '',
+    stock: '',
+    description: '',
+    available: true,
+    brandId: null,
+    imageData: null,
+    error: ''
+  });
+
+  const [settings, setSettings] = useState({
+    name: '', slogan: '', city: '', address: '',
+    currency: 'FCFA', phone: '', openTime: '08:00',
+    closeTime: '23:00', themeColor: '#f0a500', themePreset: 'amber-gold'
+  });
 
   // Sfx
   const audioRef = useRef(null);
   const canvasRef = useRef(null);
-
-  // Search & Filter State
-  const [prodSearch, setProdSearch] = useState('');
-  const [currentCat, setCurrentCat] = useState('all');
 
   // Register State
   const [regStart, setRegStart] = useState(() => {
@@ -37,51 +62,13 @@ export default function AdminDashboard() {
   const [regEnd, setRegEnd] = useState(() => new Date().toISOString().split('T')[0]);
   const [regSearch, setRegSearch] = useState('');
 
-  // Waiter Space State
-  const [showWaiterModal, setShowWaiterModal] = useState(false);
   const [waiterNameInput, setWaiterNameInput] = useState('');
   const [waiterCodeInput, setWaiterCodeInput] = useState('');
   const [editingWaiterIdx, setEditingWaiterIdx] = useState(-1);
-
-  // Product Modal State
-  const [showProdModal, setShowProdModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [prodType, setProdType] = useState('drink'); // drink | food
-  const [selectedBrandId, setSelectedBrandId] = useState(null);
-  const [foodPhotoData, setFoodPhotoData] = useState(null);
-  const [prodNameInput, setProdNameInput] = useState('');
-  const [prodCatInput, setProdCatInput] = useState('alcohol');
-  const [prodPriceInput, setProdPriceInput] = useState('');
-  const [prodStockInput, setProdStockInput] = useState('');
-  const [prodDescInput, setProdDescInput] = useState('');
-  const [prodAvailInput, setProdAvailInput] = useState(true);
-  const [prodError, setProdError] = useState('');
-
-  // Delete Confirm
-  const [showDelModal, setShowDelModal] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-
-  // Settings State
-  const [settingsName, setSettingsName] = useState('');
-  const [settingsSlogan, setSettingsSlogan] = useState('');
-  const [settingsCity, setSettingsCity] = useState('');
-  const [settingsAddress, setSettingsAddress] = useState('');
-  const [settingsCurrency, setSettingsCurrency] = useState('FCFA');
-  const [settingsPhone, setSettingsPhone] = useState('');
-  const [settingsOpen, setSettingsOpen] = useState('08:00');
-  const [settingsClose, setSettingsClose] = useState('23:00');
-  const [settingsTheme, setSettingsTheme] = useState('#f0a500');
-  const [settingsThemePreset, setSettingsThemePreset] = useState('amber-gold');
-
-  // Subscription State
   const [activationCode, setActivationCode] = useState('');
-
-  // Galleries Modals
-  const [showGalModal, setShowGalModal] = useState(false);
   const [galSearch, setGalSearch] = useState('');
   const [galCat, setGalCat] = useState('all');
-
-  const [showFoodGalModal, setShowFoodGalModal] = useState(false);
   const [foodGalSearch, setFoodGalSearch] = useState('');
   const [foodGalCat, setFoodGalCat] = useState('all');
 
@@ -92,6 +79,10 @@ export default function AdminDashboard() {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
   };
+
+  const updateUi = (key, val) => setUi(prev => ({ ...prev, [key]: val }));
+  const updateProdForm = (key, val) => setProdForm(prev => ({ ...prev, [key]: val }));
+  const updateSettings = (key, val) => setSettings(prev => ({ ...prev, [key]: val }));
 
   useEffect(() => {
     // Auth & setup
@@ -105,27 +96,27 @@ export default function AdminDashboard() {
         return;
       }
       setBuvette(session);
+      updateUi('loading', false);
       const config = getThemeConfig(session.themePreset, session.themeColor);
       document.documentElement.style.setProperty('--theme', config.themeColor || '#f0a500');
 
-      // Sync data from Firebase
       await PRODUCTS.syncFromFirebase(session.id);
       await ORDERS.syncFromFirebase(session.id);
-
       setProducts(PRODUCTS.getAll(session.id));
       setOrders(ORDERS.getAll(session.id));
 
-      // Setup Settings fields
-      setSettingsName(session.name || '');
-      setSettingsSlogan(session.slogan || '');
-      setSettingsCity(session.city || '');
-      setSettingsAddress(session.address || '');
-      setSettingsCurrency(session.currency || 'FCFA');
-      setSettingsPhone(session.phone || '');
-      setSettingsOpen(session.openTime || '08:00');
-      setSettingsClose(session.closeTime || '23:00');
-      setSettingsTheme(session.themeColor || '#f0a500');
-      setSettingsThemePreset(session.themePreset || 'amber-gold');
+      setSettings({
+        name: session.name || '',
+        slogan: session.slogan || '',
+        city: session.city || '',
+        address: session.address || '',
+        currency: session.currency || 'FCFA',
+        phone: session.phone || '',
+        openTime: session.openTime || '08:00',
+        closeTime: session.closeTime || '23:00',
+        themeColor: session.themeColor || '#f0a500',
+        themePreset: session.themePreset || 'amber-gold'
+      });
 
       // Check Trial (14 days)
       const created = new Date(session.createdAt || Date.now());
@@ -217,6 +208,7 @@ export default function AdminDashboard() {
       setShowWaiterModal(false);
       showToast('Équipe mise à jour ✅', 'success');
     } catch (err) {
+      void err;
       showToast('Erreur lors de la sauvegarde', 'error');
     }
   };
@@ -230,6 +222,7 @@ export default function AdminDashboard() {
       setBuvette(updated);
       showToast('Serveur supprimé', 'info');
     } catch (err) {
+      void err;
       showToast('Erreur lors de la suppression', 'error');
     }
   };
@@ -303,7 +296,8 @@ export default function AdminDashboard() {
       setShowProdModal(false);
       showToast(editingProduct ? 'Produit modifié ✅' : 'Produit ajouté ✅', 'success');
     } catch (err) {
-      setProdError('Erreur : ' + err.message);
+      void err;
+      setProdError('Erreur lors de l\'opération');
     }
   };
 
@@ -502,6 +496,7 @@ export default function AdminDashboard() {
         setActivationCode('');
         showToast(`Félicitations ! Abonnement ${matchedPlan} activé ! 🎉`, 'success');
       } catch (err) {
+        void err;
         showToast("Erreur lors de l'activation de l'abonnement", 'error');
       }
     } else {
@@ -510,7 +505,7 @@ export default function AdminDashboard() {
   };
 
   // Chart Rendering
-  const drawChart = () => {
+  function drawChart() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -630,6 +625,37 @@ export default function AdminDashboard() {
   return (
     <div className="app-layout" style={{ minHeight: '100vh', background: '#030305' }}>
       <style>{`
+        /* --- Global Scrollbar & Interaction fixes --- */
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+
+        .nav-item, .cat-tab, .prod-card, button, .btn {
+          cursor: pointer;
+          user-select: none;
+          transition: transform 0.1s var(--ease), opacity 0.2s var(--ease);
+        }
+
+        .nav-item:active, .cat-tab:active, .prod-card:active, button:active:not(:disabled), .btn:active:not(:disabled) {
+          transform: scale(0.97);
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+
+        .cat-tabs {
+          display: flex;
+          overflow-x: auto;
+          white-space: nowrap;
+          gap: 0.5rem;
+        }
+
         .gf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.6rem; max-height: 250px; overflow-y: auto; padding: 0.25rem; }
         .gf-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.6rem; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-glass); cursor: pointer; transition: all 0.2s; }
         .gf-item.on { border-color: var(--theme); background: rgba(240,165,0,0.08); }

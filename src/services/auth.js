@@ -36,8 +36,7 @@ export const AUTH = {
 
   async login(email, password, bid = null) {
     console.log('[AUTH-V2] Login attempt:', { email, bid });
-    try {
-      let uid = bid;
+    let uid = bid;
       if (!uid) {
         const sanitizedEmail = email.toLowerCase().replace(/[.#$[\]]/g, '_');
         uid = await FBSYNC.pull(`lookups/emails/${sanitizedEmail}`);
@@ -65,15 +64,14 @@ export const AUTH = {
             return { ...profile, id: uid, role: 'waiter', waiterName: 'Serveur' };
           }
         }
-        throw new Error('Code serveur ou mot de passe incorrect.');
+        void authErr;
+        throw new Error('Code serveur ou mot de passe incorrect.', { cause: authErr });
       }
-    } catch (err) {
-      throw err;
-    }
+    
   },
 
   setSession(buvetteId, role, remember = false, waiterName = null) {
-    const data = { buvetteId, role, waiterName, ts: Date.now() };
+    const data = { buvetteId, role, waiterName, ts: Date.now(), remember };
     localStorage.setItem(this.SESSION_KEY, JSON.stringify(data));
   },
 
@@ -87,7 +85,7 @@ export const AUTH = {
       }
       if (!pubData && !privData) return null;
       return { id: uid, ...(pubData || {}), ...(privData || {}) };
-    } catch (e) {
+    } catch {
       return null;
     }
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AUTH } from '../services/auth';
 import { ORDERS } from '../services/orders';
@@ -47,13 +47,13 @@ export default function ServeurSpace() {
     });
   }, [navigate]);
 
-  const showToast = (msg, type = 'info') => {
+  function showToast(msg, type = 'info') {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, msg, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
-  };
+  }
 
   const handleLogout = async () => {
     await AUTH.logout();
@@ -117,6 +117,24 @@ export default function ServeurSpace() {
   return (
     <div style={{ background: '#030305', color: '#fff', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <style>{`
+        /* --- Global Scrollbar & Interaction fixes --- */
+        * {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
+        }
+        *::-webkit-scrollbar {
+          display: none !important;
+        }
+
+        button, .btn, .order-card {
+          cursor: pointer;
+          transition: transform 0.1s var(--ease);
+        }
+
+        button:active, .btn:active {
+          transform: scale(0.97);
+        }
+
         .sv-container { display: flex; flex-direction: column; min-height: 100vh; }
         .sv-header { 
           padding: 1.5rem 2rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.08);
