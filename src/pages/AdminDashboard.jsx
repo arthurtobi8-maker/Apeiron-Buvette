@@ -1286,14 +1286,14 @@ export default function AdminDashboard() {
                     <p style={{ fontSize: '.78rem', color: 'var(--text-muted)' }}>
                       Idéal pour le gérant. Permet d'avoir le dashboard en plein écran et une meilleure gestion des impressions.
                     </p>
-                    <a
-                      href={`${window.location.origin}/ApeironBuvette.exe`}
-                      download="ApeironBuvette.exe"
+                    <button
                       className="btn btn-secondary btn-sm"
                       style={{ textAlign: 'center', justifyContent: 'center' }}
+                      disabled
+                      title="En cours de développement..."
                     >
-                      ⬇️ Télécharger pour Windows
-                    </a>
+                      ⏳ Bientôt disponible (Windows)
+                    </button>
                   </div>
 
                   {/* Android App card */}
@@ -1305,14 +1305,14 @@ export default function AdminDashboard() {
                       Pour le gérant et les serveurs. Permet d'avoir les notifications et alertes sonores de commande en arrière-plan.
                     </p>
                     <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
-                      <a
-                        href={`${window.location.origin}/ApeironBuvette.apk`}
-                        download="ApeironBuvette.apk"
+                      <button
                         className="btn btn-secondary btn-sm"
                         style={{ flex: 1, textAlign: 'center', justifyContent: 'center', minWidth: '120px' }}
+                        disabled
+                        title="En cours de développement..."
                       >
-                        ⬇️ Télécharger APK
-                      </a>
+                        ⏳ Bientôt disponible (APK)
+                      </button>
                       <button
                         className="btn btn-primary btn-sm"
                         style={{ flex: 1, minWidth: '140px' }}
